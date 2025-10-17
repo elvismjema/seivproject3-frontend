@@ -7,7 +7,7 @@ var baseurl = "";
 if (import.meta.env.DEV) {
   baseurl = "http://localhost:3122/tracker-t2/";
 } else {
-  baseurl = "/tracker-t2/";
+  baseurl = import.meta.env.VITE_APP_BASE_URL || "https://project2.eaglesoftwareteam.com/tracker-t2/";
 }
 
 const apiClient = axios.create({
