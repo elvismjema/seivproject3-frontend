@@ -254,3 +254,4 @@ If issues persist after following this guide:
 2. Verify all environment variables are set correctly
 3. Ensure XAMPP services are running
 4. Check that both servers are running without errors
+# Test deployment
