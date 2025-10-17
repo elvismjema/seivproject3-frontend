@@ -256,3 +256,4 @@ If issues persist after following this guide:
 4. Check that both servers are running without errors
 # Test deployment
 # Updated OAuth credentials
+# Revert to original OAuth credentials
