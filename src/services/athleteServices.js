@@ -73,6 +73,41 @@ const AthleteServices = {
       `${BASE_URL}/athlete/plans`,
       { headers: getAuthHeaders() }
     );
+  },
+
+  // Get available exercises
+  getAvailableExercises: async () => {
+    return axios.get(
+      `${BASE_URL}/athlete/exercises`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Record a single exercise with sets
+  recordExercise: async (exerciseData) => {
+    return axios.post(
+      `${BASE_URL}/athlete/exercises/record`,
+      exerciseData,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Record a single set during a workout
+  recordExerciseSet: async (setData) => {
+    return axios.post(
+      `${BASE_URL}/athlete/exercises/set`,
+      setData,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Complete a workout session
+  completeWorkout: async (workoutData) => {
+    return axios.post(
+      `${BASE_URL}/athlete/workouts/complete`,
+      workoutData,
+      { headers: getAuthHeaders() }
+    );
   }
 };
 

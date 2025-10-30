@@ -104,11 +104,20 @@ const logout = () => {
             </v-list>
           </v-card-text>
           <v-card-actions>
-            <v-btn color="#800020" variant="elevated" class="text-white">
+            <v-btn 
+              color="#800020" 
+              variant="elevated" 
+              class="text-white"
+              @click="$router.push({ name: 'workout-session' })"
+            >
               <v-icon left>mdi-play</v-icon>
               Start Workout
             </v-btn>
-            <v-btn color="#800020" variant="text">
+            <v-btn 
+              color="#800020" 
+              variant="text"
+              @click="$router.push({ name: 'record-exercise' })"
+            >
               <v-icon left>mdi-pencil</v-icon>
               Record Exercise
             </v-btn>
