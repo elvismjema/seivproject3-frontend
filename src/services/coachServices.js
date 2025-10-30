@@ -95,6 +95,61 @@ const CoachServices = {
         params: { limit }
       }
     );
+  },
+
+  // Exercise Management
+  getExercises: async () => {
+    return axios.get(
+      `${BASE_URL}/coach/exercises`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  createExercise: async (exerciseData) => {
+    return axios.post(
+      `${BASE_URL}/coach/exercises`,
+      exerciseData,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  updateExercise: async (exerciseId, exerciseData) => {
+    return axios.put(
+      `${BASE_URL}/coach/exercises/${exerciseId}`,
+      exerciseData,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  deleteExercise: async (exerciseId) => {
+    return axios.delete(
+      `${BASE_URL}/coach/exercises/${exerciseId}`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Get custom exercises count
+  getCustomExercisesCount: async () => {
+    return axios.get(
+      `${BASE_URL}/coach/exercises/custom/count`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Get active goals count
+  getActiveGoalsCount: async () => {
+    return axios.get(
+      `${BASE_URL}/coach/goals/active/count`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Get weekly results count
+  getWeeklyResultsCount: async () => {
+    return axios.get(
+      `${BASE_URL}/coach/results/weekly/count`,
+      { headers: getAuthHeaders() }
+    );
   }
 };
 
