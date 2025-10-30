@@ -6,7 +6,11 @@ import CoachServices from '../services/coachServices.js';
 
 const router = useRouter();
 const user = ref({});
+const activeTab = ref('overview');
 const athletes = ref([]);
+const customExercises = ref([]);
+const activeGoals = ref([]);
+const weeklyResults = ref([]);
 const recentResults = ref([]);
 const loading = ref(true);
 const error = ref(null);
@@ -18,12 +22,21 @@ onMounted(async () => {
     return;
   }
 
-  // Fetch coach's athletes and recent results
+  // Fetch all coach data
   try {
     loading.value = true;
-    const [athletesResponse, resultsResponse] = await Promise.all([
+    const [
+      athletesResponse,
+      resultsResponse,
+      exercisesResponse,
+      goalsCountResponse,
+      weeklyResultsResponse
+    ] = await Promise.all([
       CoachServices.getCoachAthletes(),
-      CoachServices.getCoachRecentResults()
+      CoachServices.getCoachRecentResults(),
+      CoachServices.getExercises(),
+      CoachServices.getActiveGoalsCount(),
+      CoachServices.getWeeklyResultsCount()
     ]);
 
     if (athletesResponse.data && athletesResponse.data.data) {
@@ -31,6 +44,15 @@ onMounted(async () => {
     }
     if (resultsResponse.data && resultsResponse.data.data) {
       recentResults.value = resultsResponse.data.data;
+    }
+    if (exercisesResponse.data && exercisesResponse.data.data) {
+      customExercises.value = exercisesResponse.data.data;
+    }
+    if (goalsCountResponse.data && goalsCountResponse.data.count !== undefined) {
+      activeGoals.value = goalsCountResponse.data.count;
+    }
+    if (weeklyResultsResponse.data && weeklyResultsResponse.data.count !== undefined) {
+      weeklyResults.value = weeklyResultsResponse.data.count;
     }
   } catch (err) {
     console.error('Error fetching coach data:', err);
@@ -63,10 +85,58 @@ const logout = () => {
     </v-app-bar>
 
     <v-container>
-
     <v-row class="mt-5">
       <v-col cols="12">
-        <h1>Welcome Coach {{ user.fName }}!</h1>
+        <h1 class="text-h4 mb-6">Welcome Coach {{ user.fName }}!</h1>
+        <v-tabs
+          v-model="activeTab"
+          color="#800020"
+          align-tabs="start"
+          class="mb-6"
+        >
+          <v-tab value="overview">Overview</v-tab>
+          <v-tab value="athletes">Athletes</v-tab>
+          <v-tab value="exercises">Exercises</v-tab>
+          <v-tab value="plans">Plans</v-tab>
+          <v-tab value="goals">Goals</v-tab>
+          <v-tab value="results">Results</v-tab>
+        </v-tabs>
+      </v-col>
+    </v-row>
+
+    <!-- Metrics Cards -->
+    <v-row class="mb-6">
+      <v-col cols="12" sm="6" md="3">
+        <v-card>
+          <v-card-text class="text-center">
+            <div class="text-h4 font-weight-bold">{{ athletes.length }}</div>
+            <div class="text-subtitle-1">My Athletes</div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="12" sm="6" md="3">
+        <v-card>
+          <v-card-text class="text-center">
+            <div class="text-h4 font-weight-bold">{{ customExercises.length }}</div>
+            <div class="text-subtitle-1">Custom Exercises</div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="12" sm="6" md="3">
+        <v-card>
+          <v-card-text class="text-center">
+            <div class="text-h4 font-weight-bold">{{ activeGoals.length }}</div>
+            <div class="text-subtitle-1">Active Goals</div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col cols="12" sm="6" md="3">
+        <v-card>
+          <v-card-text class="text-center">
+            <div class="text-h4 font-weight-bold">{{ weeklyResults.length }}</div>
+            <div class="text-subtitle-1">Results This Week</div>
+          </v-card-text>
+        </v-card>
       </v-col>
     </v-row>
 
