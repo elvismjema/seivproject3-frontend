@@ -56,6 +56,17 @@ const router = createRouter({
       name: "exercise-management",
       component: ExerciseManagement,
     },
+    // Workout routes
+    {
+      path: "/workout-session",
+      name: "workout-session",
+      component: () => import("./views/WorkoutSession.vue"),
+    },
+    {
+      path: "/record-exercise",
+      name: "record-exercise",
+      component: () => import("./views/RecordExercise.vue"),
+    },
   ],
 });
 
