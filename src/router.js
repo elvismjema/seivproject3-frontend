@@ -56,6 +56,16 @@ const router = createRouter({
       name: "user-management",
       component: UserManagement,
     },
+    {
+      path: "/admin-coaches",
+      name: "admin-coaches",
+      component: () => import("./views/AdminCoachList.vue"),
+    },
+    {
+      path: "/admin-athletes",
+      name: "admin-athletes",
+      component: () => import("./views/AdminAthleteList.vue"),
+    },
     // Exercise routes
     {
       path: "/exercise-management",

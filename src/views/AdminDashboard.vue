@@ -85,7 +85,7 @@ const logout = () => {
           <v-icon size="48" color="#800020">mdi-whistle</v-icon>
           <h2 class="mt-3">{{ stats.totalCoaches }}</h2>
           <p class="text-grey-darken-2">Active Coaches</p>
-          <v-btn color="#800020" variant="text">View Coaches</v-btn>
+          <v-btn color="#800020" variant="text" @click="$router.push({ name: 'admin-coaches' })">View Coaches</v-btn>
         </v-card>
       </v-col>
 
@@ -94,7 +94,7 @@ const logout = () => {
           <v-icon size="48" color="#800020">mdi-run</v-icon>
           <h2 class="mt-3">{{ stats.totalAthletes }}</h2>
           <p class="text-grey-darken-2">Active Athletes</p>
-          <v-btn color="#800020" variant="text">View Athletes</v-btn>
+          <v-btn color="#800020" variant="text" @click="$router.push({ name: 'admin-athletes' })">View Athletes</v-btn>
         </v-card>
       </v-col>
     </v-row>
