@@ -16,8 +16,8 @@ import MyCoaches from "./views/MyCoaches.vue";
 
 // Admin imports
 import UserManagement from "./views/UserManagement.vue";
-import AdminCoachList from "./views/AdminCoachList.vue";
-import AdminAthleteList from "./views/AdminAthleteList.vue";
+import AdminCoachList from "./views/admin/CoachList.vue";
+import AdminAthleteList from "./views/admin/AthleteList.vue";
 
 // Exercise imports
 import ExerciseManagement from "./views/ExerciseManagement.vue";
