@@ -17,7 +17,7 @@
           
           <v-card>
             <v-card-text>
-              <v-form ref="form" v-model="isValid" @submit.prevent="submitExercise">
+              <v-form ref="form" @submit.prevent="submitExercise">
                 <!-- Exercise Selection -->
                 <v-select
                   v-model="exerciseData.exerciseId"
@@ -128,6 +128,14 @@
                 ></v-textarea>
 
                 <!-- Submit Button -->
+                <v-alert
+                  v-if="exerciseData.sets.length === 0"
+                  type="warning"
+                  variant="tonal"
+                  class="mb-3"
+                >
+                  Please add at least one set before saving.
+                </v-alert>
                 <v-card-actions class="pt-4">
                   <v-spacer></v-spacer>
                   <v-btn
@@ -138,11 +146,15 @@
                     Cancel
                   </v-btn>
                   <v-btn
-                    color="primary"
+                    color="#800020"
+                    variant="elevated"
                     type="submit"
+                    class="text-white"
                     :loading="isSubmitting"
-                    :disabled="!isValid || exerciseData.sets.length === 0"
+                    :disabled="exerciseData.sets.length === 0 || isSubmitting"
+                    size="large"
                   >
+                    <v-icon left>mdi-content-save</v-icon>
                     Save Exercise
                   </v-btn>
                 </v-card-actions>
@@ -158,11 +170,10 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import AthleteServices from '../services/athleteServices';
+import AthleteServices from '../services/athleteServices.js';
 
 const router = useRouter();
 const form = ref(null);
-const isValid = ref(false);
 const isSubmitting = ref(false);
 const availableExercises = ref([]);
 
@@ -189,29 +200,64 @@ const removeSet = (index) => {
 };
 
 const submitExercise = async () => {
-  if (!form.value.validate()) return;
+  console.log('Submit button clicked!');
+  
+  // Validate required fields manually
+  if (!exerciseData.value.exerciseId) {
+    alert('Please select an exercise');
+    return;
+  }
+  
+  if (!exerciseData.value.date) {
+    alert('Please select a date');
+    return;
+  }
+  
+  if (!exerciseData.value.time) {
+    alert('Please select a time');
+    return;
+  }
+  
+  if (exerciseData.value.sets.length === 0) {
+    alert('Please add at least one set');
+    return;
+  }
+  
+  // Validate all sets have reps
+  for (let i = 0; i < exerciseData.value.sets.length; i++) {
+    if (!exerciseData.value.sets[i].reps) {
+      alert(`Please enter reps for set ${i + 1}`);
+      return;
+    }
+  }
   
   isSubmitting.value = true;
   
   try {
     const dateTime = new Date(`${exerciseData.value.date}T${exerciseData.value.time}`);
     
-    await AthleteServices.recordExercise({
+    console.log('Submitting exercise data:', {
       exerciseId: exerciseData.value.exerciseId,
       performedAt: dateTime.toISOString(),
       sets: exerciseData.value.sets,
       notes: exerciseData.value.notes
     });
-
-    router.push({ 
-      name: 'athlete-dashboard',
-      params: { 
-        message: 'Exercise recorded successfully!' 
-      }
+    
+    const response = await AthleteServices.recordExercise({
+      exerciseId: exerciseData.value.exerciseId,
+      performedAt: dateTime.toISOString(),
+      sets: exerciseData.value.sets,
+      notes: exerciseData.value.notes
     });
+    
+    console.log('Exercise saved successfully:', response);
+    alert('Exercise recorded successfully!');
+
+    router.push({ name: 'athlete-dashboard' });
   } catch (error) {
     console.error('Error recording exercise:', error);
-    // Show error message
+    console.error('Error details:', error.response?.data);
+    alert(`Failed to save exercise: ${error.response?.data?.message || error.message}`);
   } finally {
     isSubmitting.value = false;
   }
