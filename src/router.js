@@ -16,6 +16,8 @@ import MyCoaches from "./views/MyCoaches.vue";
 
 // Admin imports
 import UserManagement from "./views/UserManagement.vue";
+import AdminCoachList from "./views/AdminCoachList.vue";
+import AdminAthleteList from "./views/AdminAthleteList.vue";
 
 // Exercise imports
 import ExerciseManagement from "./views/ExerciseManagement.vue";
@@ -59,12 +61,12 @@ const router = createRouter({
     {
       path: "/admin-coaches",
       name: "admin-coaches",
-      component: () => import("./views/AdminCoachList.vue"),
+      component: AdminCoachList,
     },
     {
       path: "/admin-athletes",
       name: "admin-athletes",
-      component: () => import("./views/AdminAthleteList.vue"),
+      component: AdminAthleteList,
     },
     // Exercise routes
     {
