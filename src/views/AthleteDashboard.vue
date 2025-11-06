@@ -165,19 +165,19 @@ const logout = () => {
         <v-card>
           <v-card-title>Quick Actions</v-card-title>
           <v-card-text>
-            <v-btn color="#800020" variant="elevated" class="mr-2 mb-2 text-white">
+            <v-btn color="#800020" variant="elevated" class="mr-2 mb-2 text-white" @click="$router.push({ name: 'athlete-progress' })">
               <v-icon left>mdi-chart-line</v-icon>
               View Progress
             </v-btn>
-            <v-btn color="#800020" variant="tonal" class="mr-2 mb-2">
+            <v-btn color="#800020" variant="tonal" class="mr-2 mb-2" @click="$router.push({ name: 'record-workout' })">
               <v-icon left>mdi-pencil</v-icon>
               Record Workout
             </v-btn>
-            <v-btn color="#800020" variant="outlined" class="mr-2 mb-2">
+            <v-btn color="#800020" variant="outlined" class="mr-2 mb-2" @click="$router.push({ name: 'workout-schedule' })">
               <v-icon left>mdi-calendar</v-icon>
               Workout Schedule
             </v-btn>
-            <v-btn color="#800020" variant="outlined" class="mb-2">
+            <v-btn color="#800020" variant="outlined" class="mb-2" @click="$router.push({ name: 'my-coaches' })">
               <v-icon left>mdi-account-tie</v-icon>
               My Coaches
             </v-btn>
