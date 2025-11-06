@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router";
+    import { createRouter, createWebHistory } from "vue-router";
 
 import Login from "./views/Login.vue";
 import Registration from "./views/Registration.vue";
@@ -7,6 +7,12 @@ import Registration from "./views/Registration.vue";
 import AdminDashboard from "./views/AdminDashboard.vue";
 import CoachDashboard from "./views/CoachDashboard.vue";
 import AthleteDashboard from "./views/AthleteDashboard.vue";
+
+// Athlete imports
+import AthleteProgress from "./views/AthleteProgress.vue";
+import RecordWorkout from "./views/RecordWorkout.vue";
+import WorkoutSchedule from "./views/WorkoutSchedule.vue";
+import MyCoaches from "./views/MyCoaches.vue";
 
 // Admin imports
 import UserManagement from "./views/UserManagement.vue";
@@ -55,6 +61,27 @@ const router = createRouter({
       path: "/exercise-management",
       name: "exercise-management",
       component: ExerciseManagement,
+    },
+    // Athlete routes
+    {
+      path: "/athlete-progress",
+      name: "athlete-progress",
+      component: AthleteProgress,
+    },
+    {
+      path: "/record-workout",
+      name: "record-workout",
+      component: RecordWorkout,
+    },
+    {
+      path: "/workout-schedule",
+      name: "workout-schedule",
+      component: WorkoutSchedule,
+    },
+    {
+      path: "/my-coaches",
+      name: "my-coaches",
+      component: MyCoaches,
     },
     // Workout routes
     {
