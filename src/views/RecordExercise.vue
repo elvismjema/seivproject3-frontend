@@ -22,11 +22,11 @@
                 <v-select
                   v-model="exerciseData.exerciseId"
                   :items="availableExercises"
-                  item-title="name"
-                  item-value="id"
                   label="Select Exercise"
                   required
                   :rules="[v => !!v || 'Exercise is required']"
+                  :item-text="(exercise) => `${exercise.name} (${exercise.category})`"
+                  item-value="id"
                 ></v-select>
 
                 <!-- Date and Time -->
