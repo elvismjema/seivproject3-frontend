@@ -65,10 +65,23 @@ const goBack = () => {
             <v-card-text>
               <v-progress-linear v-if="loading" indeterminate color="#800020"></v-progress-linear>
               <v-list v-else-if="workoutHistory.length > 0">
-                <v-list-item v-for="workout in workoutHistory" :key="workout.id">
-                  <v-list-item-title>{{ workout.date }} - {{ workout.name }}</v-list-item-title>
+                <v-list-item v-for="workout in workoutHistory" :key="workout.id" class="mb-2">
+                  <template v-slot:prepend>
+                    <v-avatar color="#800020">
+                      <v-icon color="white">mdi-dumbbell</v-icon>
+                    </v-avatar>
+                  </template>
+                  <v-list-item-title class="font-weight-bold">
+                    {{ workout.exercise?.name || 'Exercise' }}
+                  </v-list-item-title>
                   <v-list-item-subtitle>
-                    {{ workout.exercises }} exercises completed
+                    {{ new Date(workout.performedDate).toLocaleDateString() }} - 
+                    {{ workout.sets }} sets × {{ workout.reps }} reps
+                    <span v-if="workout.weight"> @ {{ workout.weight }} lbs</span>
+                  </v-list-item-subtitle>
+                  <v-list-item-subtitle v-if="workout.notes" class="mt-1">
+                    <v-icon size="small">mdi-note-text</v-icon>
+                    {{ workout.notes }}
                   </v-list-item-subtitle>
                 </v-list-item>
               </v-list>

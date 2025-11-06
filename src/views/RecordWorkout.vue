@@ -7,29 +7,54 @@ import AthleteServices from '../services/athleteServices.js';
 const router = useRouter();
 const user = ref({});
 const workoutForm = ref({
-  date: new Date().toISOString().split('T')[0],
-  exercises: '',
+  exerciseId: null,
+  performedDate: new Date().toISOString().split('T')[0],
+  sets: null,
+  reps: null,
+  weight: null,
   notes: ''
 });
 const submitting = ref(false);
 const successMessage = ref('');
+const availableExercises = ref([]);
+const loading = ref(true);
 
-onMounted(() => {
+onMounted(async () => {
   user.value = Utils.getStore("user");
   if (!user.value || user.value.role !== 'athlete') {
     router.push({ name: 'login' });
     return;
   }
+
+  // Load available exercises
+  try {
+    const response = await AthleteServices.getAvailableExercises();
+    if (response.data && response.data.data) {
+      availableExercises.value = response.data.data;
+    }
+  } catch (err) {
+    console.error('Error loading exercises:', err);
+  } finally {
+    loading.value = false;
+  }
 });
 
 const submitWorkout = async () => {
+  if (!workoutForm.value.exerciseId) {
+    alert('Please select an exercise');
+    return;
+  }
+
   try {
     submitting.value = true;
     await AthleteServices.recordWorkout(workoutForm.value);
     successMessage.value = 'Workout recorded successfully!';
     workoutForm.value = {
-      date: new Date().toISOString().split('T')[0],
-      exercises: '',
+      exerciseId: null,
+      performedDate: new Date().toISOString().split('T')[0],
+      sets: null,
+      reps: null,
+      weight: null,
       notes: ''
     };
   } catch (err) {
@@ -77,7 +102,7 @@ const goBack = () => {
               
               <v-form @submit.prevent="submitWorkout">
                 <v-text-field
-                  v-model="workoutForm.date"
+                  v-model="workoutForm.performedDate"
                   label="Date"
                   type="date"
                   variant="outlined"
@@ -85,15 +110,54 @@ const goBack = () => {
                   required
                 ></v-text-field>
 
-                <v-textarea
-                  v-model="workoutForm.exercises"
-                  label="Exercises (one per line)"
+                <v-select
+                  v-model="workoutForm.exerciseId"
+                  :items="availableExercises"
+                  item-title="name"
+                  item-value="id"
+                  label="Exercise"
                   variant="outlined"
-                  rows="6"
                   class="mb-3"
-                  placeholder="e.g., Bench Press - 3x10 @ 135 lbs"
+                  :loading="loading"
                   required
-                ></v-textarea>
+                >
+                  <template v-slot:item="{ item, props }">
+                    <v-list-item v-bind="props">
+                      <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                      <v-list-item-subtitle>{{ item.raw.category }}</v-list-item-subtitle>
+                    </v-list-item>
+                  </template>
+                </v-select>
+
+                <v-row>
+                  <v-col cols="4">
+                    <v-text-field
+                      v-model.number="workoutForm.sets"
+                      label="Sets"
+                      type="number"
+                      variant="outlined"
+                      min="1"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field
+                      v-model.number="workoutForm.reps"
+                      label="Reps"
+                      type="number"
+                      variant="outlined"
+                      min="1"
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="4">
+                    <v-text-field
+                      v-model.number="workoutForm.weight"
+                      label="Weight (lbs)"
+                      type="number"
+                      variant="outlined"
+                      min="0"
+                    ></v-text-field>
+                  </v-col>
+                </v-row>
 
                 <v-textarea
                   v-model="workoutForm.notes"
@@ -110,7 +174,7 @@ const goBack = () => {
                   variant="elevated"
                   class="text-white"
                   :loading="submitting"
-                  :disabled="submitting"
+                  :disabled="submitting || !workoutForm.exerciseId"
                 >
                   <v-icon left>mdi-content-save</v-icon>
                   Save Workout
