@@ -211,8 +211,11 @@ const savePlan = async () => {
       isPublic: newPlan.value.isPublic
     };
     
+    console.log('Sending plan data to backend:', planData);
+    
     // Call the API to create the plan
-    await CoachServices.createPlan(planData);
+    const response = await CoachServices.createPlan(planData);
+    console.log('Plan created successfully:', response);
     
     // Show success message
     showSnackbar('Training plan created successfully!', 'success');
@@ -231,7 +234,10 @@ const savePlan = async () => {
     await fetchCoachData();
   } catch (error) {
     console.error('Error saving plan:', error);
-    const errorMessage = error.response?.data?.message || 'Failed to save training plan';
+    console.error('Error response:', error.response);
+    console.error('Error response data:', error.response?.data);
+    console.error('Error message:', error.message);
+    const errorMessage = error.response?.data?.message || 'Failed to create plan';
     showSnackbar(`Error: ${errorMessage}`, 'error');
   } finally {
     isSavingPlan.value = false;
