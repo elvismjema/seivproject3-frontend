@@ -113,8 +113,6 @@ const goBack = () => {
                 <v-select
                   v-model="workoutForm.exerciseId"
                   :items="availableExercises"
-                  item-title="name"
-                  item-value="id"
                   label="Exercise"
                   variant="outlined"
                   class="mb-3"
@@ -126,6 +124,9 @@ const goBack = () => {
                       <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
                       <v-list-item-subtitle>{{ item.raw.category }}</v-list-item-subtitle>
                     </v-list-item>
+                  </template>
+                  <template v-slot:selection="{ item }">
+                    {{ item.raw.name }}
                   </template>
                 </v-select>
 
