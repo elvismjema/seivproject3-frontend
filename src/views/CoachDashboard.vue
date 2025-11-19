@@ -43,8 +43,19 @@ const newPlan = ref({
   description: '',
   exercises: [],
   durationWeeks: 4,
+  days: [],
   isPublic: false
 });
+
+const daysOfWeek = [
+  { title: 'Monday', value: 'Monday' },
+  { title: 'Tuesday', value: 'Tuesday' },
+  { title: 'Wednesday', value: 'Wednesday' },
+  { title: 'Thursday', value: 'Thursday' },
+  { title: 'Friday', value: 'Friday' },
+  { title: 'Saturday', value: 'Saturday' },
+  { title: 'Sunday', value: 'Sunday' }
+];
 
 const newGoal = ref({
   athleteId: '',
@@ -203,6 +214,7 @@ const savePlan = async () => {
       name: newPlan.value.name.trim(),
       description: newPlan.value.description.trim(),
       duration: newPlan.value.durationWeeks,
+      dayCheck: newPlan.value.days.join(','),
       exercises: newPlan.value.exercises.map(exerciseId => ({
         exerciseId: exerciseId,
         sets: 3,
@@ -227,6 +239,7 @@ const savePlan = async () => {
       description: '',
       exercises: [],
       durationWeeks: 4,
+      days: [],
       isPublic: false
     };
     
@@ -643,6 +656,19 @@ const logout = () => {
             label="Select Exercises"
             multiple
             chips
+            class="mb-4"
+          ></v-select>
+          
+          <v-select
+            v-model="newPlan.days"
+            :items="daysOfWeek"
+            item-title="title"
+            item-value="value"
+            label="Workout Days"
+            multiple
+            chips
+            hint="Select the days athletes should follow this plan"
+            persistent-hint
             class="mb-4"
           ></v-select>
           
