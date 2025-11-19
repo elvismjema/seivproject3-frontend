@@ -202,8 +202,12 @@ const savePlan = async () => {
     const planData = {
       name: newPlan.value.name.trim(),
       description: newPlan.value.description.trim(),
-      exerciseIds: newPlan.value.exercises,
-      durationWeeks: newPlan.value.durationWeeks,
+      duration: newPlan.value.durationWeeks,
+      exercises: newPlan.value.exercises.map(exerciseId => ({
+        exerciseId: exerciseId,
+        sets: 3,
+        reps: 10
+      })),
       isPublic: newPlan.value.isPublic
     };
     
