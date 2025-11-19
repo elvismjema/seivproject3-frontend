@@ -47,6 +47,7 @@ const submitWorkout = async () => {
 
   try {
     submitting.value = true;
+    console.log('Submitting workout with data:', workoutForm.value);
     await AthleteServices.recordWorkout(workoutForm.value);
     successMessage.value = 'Workout recorded successfully!';
     workoutForm.value = {
@@ -59,6 +60,7 @@ const submitWorkout = async () => {
     };
   } catch (err) {
     console.error('Error recording workout:', err);
+    console.error('Error response:', err.response?.data);
     alert('Failed to record workout. Please try again.');
   } finally {
     submitting.value = false;
@@ -66,6 +68,7 @@ const submitWorkout = async () => {
 };
 
 const goBack = () => {
+  console.log('Back button clicked, navigating to athlete-dashboard');
   router.push({ name: 'athlete-dashboard' });
 };
 </script>
@@ -126,6 +129,9 @@ const goBack = () => {
                       <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
                       <v-list-item-subtitle>{{ item.raw.category }}</v-list-item-subtitle>
                     </v-list-item>
+                  </template>
+                  <template v-slot:selection="{ item }">
+                    <span v-if="item.raw">{{ item.raw.name }}</span>
                   </template>
                 </v-select>
 
