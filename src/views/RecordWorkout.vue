@@ -47,8 +47,23 @@ const submitWorkout = async () => {
 
   try {
     submitting.value = true;
-    console.log('Submitting workout with data:', workoutForm.value);
-    await AthleteServices.recordWorkout(workoutForm.value);
+    
+    // Extract exercise ID from the object since return-object is true
+    const exerciseId = typeof workoutForm.value.exerciseId === 'object' 
+      ? workoutForm.value.exerciseId.id 
+      : workoutForm.value.exerciseId;
+    
+    const dataToSubmit = {
+      exerciseId: exerciseId,
+      performedDate: workoutForm.value.performedDate,
+      sets: workoutForm.value.sets,
+      reps: workoutForm.value.reps,
+      weight: workoutForm.value.weight,
+      notes: workoutForm.value.notes
+    };
+    
+    console.log('Submitting workout with data:', dataToSubmit);
+    await AthleteServices.recordWorkout(dataToSubmit);
     successMessage.value = 'Workout recorded successfully!';
     workoutForm.value = {
       exerciseId: null,
@@ -116,13 +131,12 @@ const goBack = () => {
                 <v-select
                   v-model="workoutForm.exerciseId"
                   :items="availableExercises"
-                  item-title="name"
-                  item-value="id"
                   label="Exercise"
                   variant="outlined"
                   class="mb-3"
                   :loading="loading"
                   required
+                  return-object
                 >
                   <template v-slot:item="{ item, props }">
                     <v-list-item v-bind="props">
