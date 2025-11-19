@@ -150,7 +150,7 @@ const addAthlete = async () => {
     showSnackbar('Adding athlete...', 'info');
     
     // Call the API to add athlete
-    await CoachServices.addAthlete({ email: newAthleteEmail.value });
+    await CoachServices.addAthlete({ athleteEmail: newAthleteEmail.value });
     
     // Show success message
     showSnackbar('Athlete added successfully!', 'success');
