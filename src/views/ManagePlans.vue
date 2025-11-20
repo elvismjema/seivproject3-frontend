@@ -25,8 +25,19 @@ const newPlan = ref({
   name: '',
   description: '',
   duration: 4,
-  exercises: []
+  exercises: [],
+  days: [] // Array of selected day names
 });
+
+const daysOfWeekCheckbox = [
+  'Monday',
+  'Tuesday', 
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday'
+];
 
 // New exercise to add to plan
 const newExercise = ref({
@@ -101,7 +112,22 @@ const removeExerciseFromPlan = (index) => {
 const createPlan = async () => {
   try {
     loading.value = true;
-    await CoachServices.createPlan(newPlan.value);
+    
+    // Format the plan data for backend
+    const planData = {
+      name: newPlan.value.name,
+      description: newPlan.value.description,
+      duration: newPlan.value.duration,
+      dayCheck: newPlan.value.days.join(','), // Convert array to comma-separated string
+      exercises: newPlan.value.exercises.map(exerciseId => ({
+        exerciseId: exerciseId,
+        sets: 3,
+        reps: 10
+      })),
+      isPublic: false
+    };
+    
+    await CoachServices.createPlan(planData);
     showCreateDialog.value = false;
     resetNewPlan();
     await loadData();
@@ -170,7 +196,8 @@ const resetNewPlan = () => {
     name: '',
     description: '',
     duration: 4,
-    exercises: []
+    exercises: [],
+    days: []
   };
 };
 
@@ -189,14 +216,16 @@ const logout = () => {
   <v-container fluid class="pa-0">
     <!-- OC Branded Header -->
     <v-app-bar color="#800020" elevation="0" class="text-white">
+      <v-btn icon @click="$router.push({ name: 'coach-dashboard' })" class="text-white">
+        <v-icon color="white">mdi-arrow-left</v-icon>
+      </v-btn>
       <v-app-bar-title class="text-white">
-        <strong>OC</strong> Exercise Tracker - Manage Plans
+        <strong>OC</strong> Exercise Tracker - Plan Management
       </v-app-bar-title>
       <v-spacer></v-spacer>
-      <v-btn variant="text" @click="$router.push({ name: 'coach-dashboard' })" class="text-white">
-        <v-icon left>mdi-view-dashboard</v-icon>
-        Dashboard
-      </v-btn>
+      <v-chip class="ma-2" color="white" text-color="#800020">
+        {{ user.fName }} {{ user.lName }} (Coach)
+      </v-chip>
       <v-btn icon @click="logout" class="text-white">
         <v-icon color="white">mdi-logout</v-icon>
       </v-btn>
@@ -274,107 +303,75 @@ const logout = () => {
         <v-card-title>Create Training Plan</v-card-title>
         <v-card-text>
           <v-form>
+            <!-- Plan Name -->
             <v-text-field
               v-model="newPlan.name"
               label="Plan Name"
               required
               variant="outlined"
+              class="mb-4"
             ></v-text-field>
             
+            <!-- Description -->
             <v-textarea
               v-model="newPlan.description"
               label="Description"
               rows="3"
               variant="outlined"
+              class="mb-4"
             ></v-textarea>
             
+            <!-- Duration -->
             <v-select
               v-model="newPlan.duration"
               :items="[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
               label="Duration (weeks)"
               variant="outlined"
+              class="mb-4"
             ></v-select>
 
-            <v-divider class="my-4"></v-divider>
-            
-            <h3 class="text-h6 mb-3">Add Exercises</h3>
-            
-            <v-row>
-              <v-col cols="12" md="4">
-                <v-select
-                  v-model="newExercise.exerciseId"
-                  :items="exercises"
-                  item-title="name"
-                  item-value="id"
-                  label="Exercise"
-                  variant="outlined"
-                  dense
-                ></v-select>
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-select
-                  v-model="newExercise.dayOfWeek"
-                  :items="daysOfWeek"
-                  item-title="text"
-                  item-value="value"
-                  label="Day"
-                  variant="outlined"
-                  dense
-                ></v-select>
-              </v-col>
-              <v-col cols="6" md="2">
-                <v-text-field
-                  v-model.number="newExercise.sets"
-                  label="Sets"
-                  type="number"
-                  variant="outlined"
-                  dense
-                ></v-text-field>
-              </v-col>
-              <v-col cols="6" md="2">
-                <v-text-field
-                  v-model.number="newExercise.reps"
-                  label="Reps"
-                  type="number"
-                  variant="outlined"
-                  dense
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12" md="1">
-                <v-btn
-                  color="#800020"
-                  icon
-                  @click="addExerciseToPlan"
-                  :disabled="!newExercise.exerciseId"
-                >
-                  <v-icon>mdi-plus</v-icon>
-                </v-btn>
-              </v-col>
-            </v-row>
+            <!-- Select Exercises -->
+            <v-select
+              v-model="newPlan.exercises"
+              :items="exercises"
+              item-title="name"
+              item-value="id"
+              label="Select Exercises"
+              variant="outlined"
+              multiple
+              chips
+              closable-chips
+              hint="Select one or more exercises from the library"
+              persistent-hint
+              class="mb-4"
+            >
+              <template v-slot:chip="{ item, props }">
+                <v-chip v-bind="props" closable>
+                  {{ item.title }}
+                </v-chip>
+              </template>
+            </v-select>
 
-            <!-- Added Exercises List -->
-            <v-list v-if="newPlan.exercises.length > 0" class="mt-4">
-              <v-list-item v-for="(ex, index) in newPlan.exercises" :key="index">
-                <v-list-item-content>
-                  <v-list-item-title>
-                    {{ ex.exerciseName }} - {{ daysOfWeek.find(d => d.value === ex.dayOfWeek)?.text }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    {{ ex.sets }} sets × {{ ex.reps }} reps
-                  </v-list-item-subtitle>
-                </v-list-item-content>
-                <template v-slot:append>
-                  <v-btn
-                    icon
-                    size="small"
-                    variant="text"
-                    @click="removeExerciseFromPlan(index)"
-                  >
-                    <v-icon>mdi-delete</v-icon>
-                  </v-btn>
-                </template>
-              </v-list-item>
-            </v-list>
+            <!-- Days of the Week -->
+            <div class="mb-4">
+              <label class="text-subtitle-1 mb-2 d-block">Days of the Week</label>
+              <v-chip-group
+                v-model="newPlan.days"
+                column
+                multiple
+              >
+                <v-chip
+                  v-for="day in daysOfWeekCheckbox"
+                  :key="day"
+                  :value="day"
+                  filter
+                  variant="outlined"
+                  color="#800020"
+                >
+                  {{ day }}
+                </v-chip>
+              </v-chip-group>
+            </div>
           </v-form>
         </v-card-text>
         <v-card-actions>
