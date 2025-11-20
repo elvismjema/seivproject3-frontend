@@ -676,7 +676,7 @@ const logout = () => {
                   @click="dialog.createPlan = true"
                 >
                   <v-icon left>mdi-clipboard-list</v-icon>
-                  Create Plan
+                  Manage Plans
                 </v-btn>
               </v-list-item>
               <v-list-item class="px-0">
