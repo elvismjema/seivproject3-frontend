@@ -230,8 +230,11 @@ const savePlan = async () => {
       dayCheck: newPlan.value.days.join(','),
       exercises: newPlan.value.exercises.map(exerciseId => ({
         exerciseId: exerciseId,
+        dayOfWeek: 1, // Default to Monday, you can enhance this to let coaches select
         sets: 3,
-        reps: 10
+        reps: 10,
+        duration: null,
+        restTime: 60
       })),
       isPublic: newPlan.value.isPublic
     };
