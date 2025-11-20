@@ -73,13 +73,16 @@ const loadData = async () => {
     loading.value = true;
     const [plansResponse, exercisesResponse] = await Promise.all([
       CoachServices.getCoachPlans(),
-      ExerciseServices.getExercises()
+      ExerciseServices.getAllExercises()
     ]);
     
     plans.value = plansResponse.data.data || [];
-    exercises.value = exercisesResponse.data.data || [];
+    // Handle both direct array and nested data structure
+    exercises.value = exercisesResponse.data.data || exercisesResponse.data || [];
+    console.log('Loaded exercises:', exercises.value); // Debug log
   } catch (err) {
     error.value = err.message;
+    console.error('Error loading data:', err);
   } finally {
     loading.value = false;
   }
