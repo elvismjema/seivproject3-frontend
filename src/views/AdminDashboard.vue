@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Utils from '../config/utils.js';
-import UserServices from '../services/userServices.js';
+import AdminServices from '../services/adminServices.js';
 
 const router = useRouter();
 const user = ref({});
@@ -10,7 +10,9 @@ const stats = ref({
   totalUsers: 0,
   totalExercises: 0,
   totalCoaches: 0,
-  totalAthletes: 0
+  totalAthletes: 0,
+  totalPlans: 0,
+  totalStandardPlans: 0
 });
 
 onMounted(async () => {
@@ -22,7 +24,7 @@ onMounted(async () => {
 
   // Fetch admin statistics
   try {
-    const response = await UserServices.getAdminStats();
+    const response = await AdminServices.getDashboardStats();
     if (response.data) {
       stats.value = response.data;
     }
@@ -73,10 +75,10 @@ const logout = () => {
 
       <v-col cols="12" md="3">
         <v-card class="pa-4 text-center">
-          <v-icon size="48" color="#800020">mdi-dumbbell</v-icon>
-          <h2 class="mt-3">{{ stats.totalExercises }}</h2>
-          <p class="text-grey-darken-2">Standard Exercises</p>
-          <v-btn color="#800020" variant="text" @click="$router.push({ name: 'exercise-management' })">Manage Exercises</v-btn>
+          <v-icon size="48" color="#800020">mdi-clipboard-list</v-icon>
+          <h2 class="mt-3">{{ stats.totalPlans }}</h2>
+          <p class="text-grey-darken-2">Total Plans</p>
+          <v-btn color="#800020" variant="text" @click="$router.push({ name: 'admin-plan-management' })">Manage Plans</v-btn>
         </v-card>
       </v-col>
 
@@ -115,9 +117,9 @@ const logout = () => {
                     <v-icon left>mdi-plus</v-icon>
                     Add Standard Exercise
                   </v-btn>
-                  <v-btn color="#800020" variant="outlined">
+                  <v-btn color="#800020" variant="outlined" @click="$router.push({ name: 'admin-plan-management' })">
                     <v-icon left>mdi-clipboard-list</v-icon>
-                    Create Standard Plan
+                    Manage Plans
                   </v-btn>
                 </v-list-item-title>
               </v-list-item>
