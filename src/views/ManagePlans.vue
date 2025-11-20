@@ -9,6 +9,7 @@ const router = useRouter();
 const user = ref({});
 const plans = ref([]);
 const exercises = ref([]);
+const athletes = ref([]);
 const loading = ref(false);
 const error = ref(null);
 
@@ -17,8 +18,11 @@ const showCreateDialog = ref(false);
 const showEditDialog = ref(false);
 const showPlanDetails = ref(false);
 const showDeleteConfirm = ref(false);
+const showAssignDialog = ref(false);
 const selectedPlan = ref(null);
 const planToDelete = ref(null);
+const planToAssign = ref(null);
+const selectedAthletes = ref([]);
 
 // New plan form
 const newPlan = ref({
@@ -38,16 +42,6 @@ const daysOfWeekCheckbox = [
   'Saturday',
   'Sunday'
 ];
-
-// New exercise to add to plan
-const newExercise = ref({
-  exerciseId: null,
-  dayOfWeek: 1,
-  sets: 3,
-  reps: 10,
-  duration: null,
-  restTime: 60
-});
 
 const daysOfWeek = [
   { value: 1, text: 'Monday' },
@@ -71,14 +65,16 @@ onMounted(async () => {
 const loadData = async () => {
   try {
     loading.value = true;
-    const [plansResponse, exercisesResponse] = await Promise.all([
+    const [plansResponse, exercisesResponse, athletesResponse] = await Promise.all([
       CoachServices.getCoachPlans(),
-      ExerciseServices.getAllExercises()
+      ExerciseServices.getAllExercises(),
+      CoachServices.getCoachAthletes()
     ]);
     
     plans.value = plansResponse.data.data || [];
     // Handle both direct array and nested data structure
     exercises.value = exercisesResponse.data.data || exercisesResponse.data || [];
+    athletes.value = athletesResponse.data.data || [];
     console.log('Loaded exercises:', exercises.value); // Debug log
   } catch (err) {
     error.value = err.message;
@@ -86,30 +82,6 @@ const loadData = async () => {
   } finally {
     loading.value = false;
   }
-};
-
-const addExerciseToPlan = () => {
-  const exercise = exercises.value.find(e => e.id === newExercise.value.exerciseId);
-  if (!exercise) return;
-
-  newPlan.value.exercises.push({
-    ...newExercise.value,
-    exerciseName: exercise.name
-  });
-
-  // Reset form
-  newExercise.value = {
-    exerciseId: null,
-    dayOfWeek: 1,
-    sets: 3,
-    reps: 10,
-    duration: null,
-    restTime: 60
-  };
-};
-
-const removeExerciseFromPlan = (index) => {
-  newPlan.value.exercises.splice(index, 1);
 };
 
 const createPlan = async () => {
@@ -148,15 +120,8 @@ const editPlan = (plan) => {
     name: plan.name,
     description: plan.description,
     duration: plan.duration,
-    exercises: plan.planExercises?.map(pe => ({
-      exerciseId: pe.exerciseId,
-      dayOfWeek: pe.dayOfWeek,
-      sets: pe.sets,
-      reps: pe.reps,
-      duration: pe.duration,
-      restTime: pe.restTime,
-      exerciseName: pe.exercise?.name
-    })) || []
+    exercises: plan.planExercises?.map(pe => pe.exerciseId) || [],
+    days: plan.dayCheck ? plan.dayCheck.split(',') : []
   };
   showEditDialog.value = true;
 };
@@ -164,7 +129,21 @@ const editPlan = (plan) => {
 const updatePlan = async () => {
   try {
     loading.value = true;
-    await CoachServices.updatePlan(selectedPlan.value.id, newPlan.value);
+    
+    // Format the plan data for backend
+    const planData = {
+      name: newPlan.value.name,
+      description: newPlan.value.description,
+      duration: newPlan.value.duration,
+      dayCheck: newPlan.value.days.join(','), // Convert array to comma-separated string
+      exercises: newPlan.value.exercises.map(exerciseId => ({
+        exerciseId: exerciseId,
+        sets: 3,
+        reps: 10
+      }))
+    };
+    
+    await CoachServices.updatePlan(selectedPlan.value.id, planData);
     showEditDialog.value = false;
     resetNewPlan();
     await loadData();
@@ -207,6 +186,40 @@ const resetNewPlan = () => {
 const viewPlanDetails = (plan) => {
   selectedPlan.value = plan;
   showPlanDetails.value = true;
+};
+
+const openAssignDialog = (plan) => {
+  planToAssign.value = plan;
+  selectedAthletes.value = [];
+  showAssignDialog.value = true;
+};
+
+const assignPlanToAthletes = async () => {
+  try {
+    loading.value = true;
+    const today = new Date().toISOString().split('T')[0];
+    const athleteCount = selectedAthletes.value.length;
+    
+    // Assign the plan to each selected athlete
+    for (const athleteId of selectedAthletes.value) {
+      await CoachServices.assignPlan({
+        athleteId,
+        planId: planToAssign.value.id,
+        startDate: today
+      });
+    }
+    
+    showAssignDialog.value = false;
+    selectedAthletes.value = [];
+    planToAssign.value = null;
+    
+    // Show success message
+    alert(`Plan assigned to ${athleteCount} athlete(s) successfully!`);
+  } catch (err) {
+    error.value = err.response?.data?.message || err.message;
+  } finally {
+    loading.value = false;
+  }
 };
 
 const logout = () => {
@@ -281,7 +294,7 @@ const logout = () => {
                 Delete
               </v-btn>
               <v-spacer></v-spacer>
-              <v-btn color="#800020" variant="outlined" size="small">
+              <v-btn color="#800020" variant="outlined" size="small" @click="openAssignDialog(plan)">
                 Assign
               </v-btn>
             </v-card-actions>
@@ -430,107 +443,75 @@ const logout = () => {
         <v-card-title>Edit Training Plan</v-card-title>
         <v-card-text>
           <v-form>
+            <!-- Plan Name -->
             <v-text-field
               v-model="newPlan.name"
               label="Plan Name"
               required
               variant="outlined"
+              class="mb-4"
             ></v-text-field>
             
+            <!-- Description -->
             <v-textarea
               v-model="newPlan.description"
               label="Description"
               rows="3"
               variant="outlined"
+              class="mb-4"
             ></v-textarea>
             
+            <!-- Duration -->
             <v-select
               v-model="newPlan.duration"
               :items="[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
               label="Duration (weeks)"
               variant="outlined"
+              class="mb-4"
             ></v-select>
 
-            <v-divider class="my-4"></v-divider>
-            
-            <h3 class="text-h6 mb-3">Edit Exercises</h3>
-            
-            <v-row>
-              <v-col cols="12" md="4">
-                <v-select
-                  v-model="newExercise.exerciseId"
-                  :items="exercises"
-                  item-title="name"
-                  item-value="id"
-                  label="Exercise"
-                  variant="outlined"
-                  dense
-                ></v-select>
-              </v-col>
-              <v-col cols="12" md="3">
-                <v-select
-                  v-model="newExercise.dayOfWeek"
-                  :items="daysOfWeek"
-                  item-title="text"
-                  item-value="value"
-                  label="Day"
-                  variant="outlined"
-                  dense
-                ></v-select>
-              </v-col>
-              <v-col cols="6" md="2">
-                <v-text-field
-                  v-model.number="newExercise.sets"
-                  label="Sets"
-                  type="number"
-                  variant="outlined"
-                  dense
-                ></v-text-field>
-              </v-col>
-              <v-col cols="6" md="2">
-                <v-text-field
-                  v-model.number="newExercise.reps"
-                  label="Reps"
-                  type="number"
-                  variant="outlined"
-                  dense
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12" md="1">
-                <v-btn
-                  color="#800020"
-                  icon
-                  @click="addExerciseToPlan"
-                  :disabled="!newExercise.exerciseId"
-                >
-                  <v-icon>mdi-plus</v-icon>
-                </v-btn>
-              </v-col>
-            </v-row>
+            <!-- Select Exercises -->
+            <v-select
+              v-model="newPlan.exercises"
+              :items="exercises"
+              item-title="name"
+              item-value="id"
+              label="Select Exercises"
+              variant="outlined"
+              multiple
+              chips
+              closable-chips
+              hint="Select one or more exercises from the library"
+              persistent-hint
+              class="mb-4"
+            >
+              <template v-slot:chip="{ item, props }">
+                <v-chip v-bind="props" closable>
+                  {{ item.title }}
+                </v-chip>
+              </template>
+            </v-select>
 
-            <!-- Added Exercises List -->
-            <v-list v-if="newPlan.exercises.length > 0" class="mt-4">
-              <v-list-item v-for="(ex, index) in newPlan.exercises" :key="index">
-                <v-list-item-content>
-                  <v-list-item-title>
-                    {{ ex.exerciseName }} - {{ daysOfWeek.find(d => d.value === ex.dayOfWeek)?.text }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    {{ ex.sets }} sets × {{ ex.reps }} reps
-                  </v-list-item-subtitle>
-                </v-list-item-content>
-                <template v-slot:append>
-                  <v-btn
-                    icon
-                    size="small"
-                    variant="text"
-                    @click="removeExerciseFromPlan(index)"
-                  >
-                    <v-icon>mdi-delete</v-icon>
-                  </v-btn>
-                </template>
-              </v-list-item>
-            </v-list>
+            <!-- Days of the Week -->
+            <div class="mb-4">
+              <label class="text-subtitle-1 mb-2 d-block">Days of the Week</label>
+              <v-chip-group
+                v-model="newPlan.days"
+                column
+                multiple
+              >
+                <v-chip
+                  v-for="day in daysOfWeekCheckbox"
+                  :key="day"
+                  :value="day"
+                  filter
+                  variant="outlined"
+                  color="#800020"
+                >
+                  {{ day }}
+                </v-chip>
+              </v-chip-group>
+            </div>
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -565,6 +546,62 @@ const logout = () => {
           <v-btn @click="showDeleteConfirm = false; planToDelete = null; error = null">Cancel</v-btn>
           <v-btn color="error" variant="elevated" @click="deletePlan" :loading="loading">
             Delete
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Assign Plan Dialog -->
+    <v-dialog v-model="showAssignDialog" max-width="600">
+      <v-card>
+        <v-card-title>Assign Plan to Athletes</v-card-title>
+        <v-card-subtitle v-if="planToAssign">
+          Plan: {{ planToAssign.name }}
+        </v-card-subtitle>
+        <v-card-text>
+          <v-alert v-if="athletes.length === 0" type="info" class="mb-4">
+            You don't have any athletes assigned yet. Add athletes from the Coach Dashboard first.
+          </v-alert>
+          
+          <v-list v-if="athletes.length > 0">
+            <v-list-item
+              v-for="athlete in athletes"
+              :key="athlete.id"
+              :value="athlete.id"
+            >
+              <template v-slot:prepend>
+                <v-checkbox
+                  v-model="selectedAthletes"
+                  :value="athlete.id"
+                  hide-details
+                ></v-checkbox>
+              </template>
+              <v-list-item-title>{{ athlete.name }}</v-list-item-title>
+              <v-list-item-subtitle>
+                {{ athlete.email }}
+                <span v-if="athlete.currentPlan"> • Current Plan: {{ athlete.currentPlan }}</span>
+              </v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+
+          <v-alert v-if="error" type="error" class="mt-3">
+            {{ error }}
+          </v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn @click="showAssignDialog = false; selectedAthletes = []; error = null">
+            Cancel
+          </v-btn>
+          <v-btn
+            color="#800020"
+            variant="elevated"
+            @click="assignPlanToAthletes"
+            :disabled="selectedAthletes.length === 0"
+            :loading="loading"
+            class="text-white"
+          >
+            Assign to {{ selectedAthletes.length }} Athlete(s)
           </v-btn>
         </v-card-actions>
       </v-card>
