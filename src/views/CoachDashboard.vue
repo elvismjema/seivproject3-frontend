@@ -6,7 +6,6 @@ import CoachServices from '../services/coachServices.js';
 
 const router = useRouter();
 const user = ref({});
-const activeTab = ref('overview');
 const athletes = ref([]);
 const customExercises = ref([]);
 const activeGoals = ref([]);
@@ -88,19 +87,6 @@ const logout = () => {
     <v-row class="mt-5">
       <v-col cols="12">
         <h1 class="text-h4 mb-6">Welcome Coach {{ user.fName }}!</h1>
-        <v-tabs
-          v-model="activeTab"
-          color="#800020"
-          align-tabs="start"
-          class="mb-6"
-        >
-          <v-tab value="overview">Overview</v-tab>
-          <v-tab value="athletes">Athletes</v-tab>
-          <v-tab value="exercises">Exercises</v-tab>
-          <v-tab value="plans">Plans</v-tab>
-          <v-tab value="goals">Goals</v-tab>
-          <v-tab value="results">Results</v-tab>
-        </v-tabs>
       </v-col>
     </v-row>
 
@@ -184,9 +170,9 @@ const logout = () => {
                 </v-btn>
               </v-list-item>
               <v-list-item>
-                <v-btn color="#800020" block class="mb-2" variant="tonal">
+                <v-btn color="#800020" block class="mb-2" variant="tonal" @click="$router.push({ name: 'manage-plans' })">
                   <v-icon left>mdi-clipboard-list</v-icon>
-                  Create Plan
+                  Manage Plans
                 </v-btn>
               </v-list-item>
               <v-list-item>

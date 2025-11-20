@@ -20,6 +20,9 @@ import UserManagement from "./views/UserManagement.vue";
 // Exercise imports
 import ExerciseManagement from "./views/ExerciseManagement.vue";
 
+// Coach imports
+import ManagePlans from "./views/ManagePlans.vue";
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -71,6 +74,12 @@ const router = createRouter({
       path: "/exercise-management",
       name: "exercise-management",
       component: ExerciseManagement,
+    },
+    // Coach routes
+    {
+      path: "/manage-plans",
+      name: "manage-plans",
+      component: ManagePlans,
     },
     // Athlete routes
     {
