@@ -117,10 +117,6 @@ const logout = () => {
                     <v-icon left>mdi-plus</v-icon>
                     Add Standard Exercise
                   </v-btn>
-                  <v-btn color="#800020" variant="outlined" @click="$router.push({ name: 'admin-plan-management' })">
-                    <v-icon left>mdi-clipboard-list</v-icon>
-                    Manage Plans
-                  </v-btn>
                 </v-list-item-title>
               </v-list-item>
             </v-list>
