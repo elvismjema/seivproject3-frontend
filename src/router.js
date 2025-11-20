@@ -88,6 +88,11 @@ const router = createRouter({
       component: AthleteProgress,
     },
     {
+      path: "/coach/athlete-progress/:id",
+      name: "coach-athlete-progress",
+      component: () => import("./views/CoachAthleteProgress.vue"),
+    },
+    {
       path: "/record-workout",
       name: "record-workout",
       component: RecordWorkout,

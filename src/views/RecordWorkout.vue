@@ -47,7 +47,18 @@ const submitWorkout = async () => {
 
   try {
     submitting.value = true;
-    await AthleteServices.recordWorkout(workoutForm.value);
+    
+    const dataToSubmit = {
+      exerciseId: workoutForm.value.exerciseId,
+      performedDate: workoutForm.value.performedDate,
+      sets: workoutForm.value.sets,
+      reps: workoutForm.value.reps,
+      weight: workoutForm.value.weight,
+      notes: workoutForm.value.notes
+    };
+    
+    console.log('Submitting workout with data:', dataToSubmit);
+    await AthleteServices.recordWorkout(dataToSubmit);
     successMessage.value = 'Workout recorded successfully!';
     workoutForm.value = {
       exerciseId: null,
@@ -59,6 +70,7 @@ const submitWorkout = async () => {
     };
   } catch (err) {
     console.error('Error recording workout:', err);
+    console.error('Error response:', err.response?.data);
     alert('Failed to record workout. Please try again.');
   } finally {
     submitting.value = false;
@@ -66,6 +78,7 @@ const submitWorkout = async () => {
 };
 
 const goBack = () => {
+  console.log('Back button clicked, navigating to athlete-dashboard');
   router.push({ name: 'athlete-dashboard' });
 };
 </script>
@@ -122,8 +135,7 @@ const goBack = () => {
                   required
                 >
                   <template v-slot:item="{ item, props }">
-                    <v-list-item v-bind="props">
-                      <v-list-item-title>{{ item.raw.name }}</v-list-item-title>
+                    <v-list-item v-bind="props" :title="item.raw.name">
                       <v-list-item-subtitle>{{ item.raw.category }}</v-list-item-subtitle>
                     </v-list-item>
                   </template>
