@@ -62,11 +62,9 @@ const daysOfWeek = [
 const newGoal = ref({
   athleteId: '',
   exerciseId: '',
-  title: '',
-  description: '',
   targetDate: '',
   targetValue: '',
-  metric: 'reps' // or 'weight', 'time', etc.
+  targetUnit: 'reps' // must match backend enum
 });
 
 const workoutResult = ref({
@@ -350,10 +348,6 @@ const saveGoal = async () => {
     showSnackbar('Please select an exercise', 'warning');
     return;
   }
-  if (!newGoal.value.title?.trim()) {
-    showSnackbar('Please enter a goal title', 'warning');
-    return;
-  }
   if (!newGoal.value.targetValue || newGoal.value.targetValue <= 0) {
     showSnackbar('Please enter a valid target value', 'warning');
     return;
@@ -372,10 +366,8 @@ const saveGoal = async () => {
       athleteId: newGoal.value.athleteId,
       exerciseId: newGoal.value.exerciseId,
       targetValue: parseFloat(newGoal.value.targetValue),
-      targetUnit: newGoal.value.metric,
-      targetDate: newGoal.value.targetDate,
-      title: newGoal.value.title,
-      description: newGoal.value.description
+      targetUnit: newGoal.value.targetUnit,
+      targetDate: newGoal.value.targetDate
     };
     
     console.log('Sending goal data:', goalData);
@@ -390,11 +382,9 @@ const saveGoal = async () => {
     newGoal.value = {
       athleteId: '',
       exerciseId: '',
-      title: '',
-      description: '',
       targetDate: '',
       targetValue: '',
-      metric: 'reps'
+      targetUnit: 'reps'
     };
     
     // Refresh data
@@ -1033,20 +1023,6 @@ const logout = () => {
             class="mb-4"
           ></v-select>
           
-          <v-text-field
-            v-model="newGoal.title"
-            label="Goal Title"
-            required
-            class="mb-4"
-          ></v-text-field>
-          
-          <v-textarea
-            v-model="newGoal.description"
-            label="Description"
-            rows="2"
-            class="mb-4"
-          ></v-textarea>
-          
           <v-row>
             <v-col cols="12" sm="6">
               <v-text-field
@@ -1059,9 +1035,17 @@ const logout = () => {
             </v-col>
             <v-col cols="12" sm="6">
               <v-select
-                v-model="newGoal.metric"
-                :items="['reps', 'weight (lbs)', 'time (min)', 'distance (mi)']"
-                label="Metric"
+                v-model="newGoal.targetUnit"
+                :items=" [
+                  {title: 'Reps', value: 'reps'},
+                  {title: 'Weight (lbs)', value: 'weight_lbs'},
+                  {title: 'Weight (kg)', value: 'weight_kg'},
+                  {title: 'Time (seconds)', value: 'time_seconds'},
+                  {title: 'Distance (meters)', value: 'distance_meters'}
+                ]"
+                item-title="title"
+                item-value="value"
+                label="Unit"
                 required
                 class="mb-4"
               ></v-select>
