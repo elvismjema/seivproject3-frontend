@@ -31,6 +31,23 @@ onMounted(async () => {
 const goBack = () => {
   router.push({ name: 'athlete-dashboard' });
 };
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+};
+
+const viewPlanExercises = (plan) => {
+  if (!plan || !plan.id) return;
+  // Store the plan in session storage for the workout session
+  sessionStorage.setItem('currentPlan', JSON.stringify(plan));
+  router.push({ name: 'workout-session' });
+};
 </script>
 
 <template>
@@ -57,32 +74,75 @@ const goBack = () => {
 
       <v-row>
         <v-col cols="12">
-          <v-card>
-            <v-card-title class="text-h5">
-              <v-icon left color="#800020">mdi-calendar-month</v-icon>
-              My Training Plans
-            </v-card-title>
-            <v-card-text>
-              <v-progress-linear v-if="loading" indeterminate color="#800020"></v-progress-linear>
-              <v-list v-else-if="assignedPlans.length > 0">
-                <v-list-item v-for="plan in assignedPlans" :key="plan.id">
-                  <v-list-item-title>{{ plan.name }}</v-list-item-title>
-                  <v-list-item-subtitle>
-                    {{ plan.description || 'No description' }}
-                  </v-list-item-subtitle>
-                  <template v-slot:append>
-                    <v-chip color="#800020" text-color="white" size="small">
-                      {{ plan.duration || 'Ongoing' }}
+          <v-progress-linear v-if="loading" indeterminate color="#800020"></v-progress-linear>
+          
+          <v-expansion-panels v-else-if="assignedPlans.length > 0">
+            <v-expansion-panel v-for="assignment in assignedPlans" :key="assignment.id">
+              <v-expansion-panel-title>
+                <v-row no-gutters align="center">
+                  <v-col cols="12" md="6">
+                    <div>
+                      <strong>{{ assignment.plan?.name || 'Unnamed Plan' }}</strong>
+                      <div class="text-caption text-grey">
+                        Assigned by: {{ assignment.assignedByUser?.fName }} {{ assignment.assignedByUser?.lName }}
+                      </div>
+                    </div>
+                  </v-col>
+                  <v-col cols="12" md="6" class="text-md-right">
+                    <v-chip color="#800020" text-color="white" size="small" class="ma-1">
+                      Started: {{ formatDate(assignment.startDate) }}
                     </v-chip>
-                  </template>
-                </v-list-item>
-              </v-list>
-              <v-alert v-else color="grey-lighten-3" variant="flat">
-                <v-icon color="#800020">mdi-information</v-icon>
-                No workout plans assigned yet. Contact your coach to get started!
-              </v-alert>
-            </v-card-text>
-          </v-card>
+                    <v-chip color="primary" text-color="white" size="small" class="ma-1">
+                      {{ assignment.plan?.duration || 0 }} weeks
+                    </v-chip>
+                    <v-chip v-if="assignment.endDate" color="grey" text-color="white" size="small" class="ma-1">
+                      Ended: {{ formatDate(assignment.endDate) }}
+                    </v-chip>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-title>
+              
+              <v-expansion-panel-text>
+                <v-row>
+                  <v-col cols="12">
+                    <p v-if="assignment.plan?.description" class="mb-4">
+                      {{ assignment.plan.description }}
+                    </p>
+                    
+                    <div class="mb-3">
+                      <strong>Plan Details:</strong>
+                      <v-list density="compact">
+                        <v-list-item>
+                          <v-list-item-title>Duration: {{ assignment.plan?.duration }} weeks</v-list-item-title>
+                        </v-list-item>
+                        <v-list-item>
+                          <v-list-item-title>Created by: {{ assignment.plan?.creator?.fName }} {{ assignment.plan?.creator?.lName }}</v-list-item-title>
+                        </v-list-item>
+                        <v-list-item v-if="assignment.plan?.dayCheck">
+                          <v-list-item-title>Days: {{ assignment.plan.dayCheck }}</v-list-item-title>
+                        </v-list-item>
+                      </v-list>
+                    </div>
+                    
+                    <v-btn 
+                      color="#800020" 
+                      variant="outlined"
+                      @click="viewPlanExercises(assignment.plan)"
+                      :disabled="!assignment.plan"
+                    >
+                      <v-icon left>mdi-dumbbell</v-icon>
+                      View Exercises
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
+
+          <v-alert v-else color="grey-lighten-3" variant="flat">
+            <v-icon color="#800020">mdi-information</v-icon>
+            No workout plans assigned yet. Contact your coach to get started!
+          </v-alert>
         </v-col>
       </v-row>
     </v-container>

@@ -31,6 +31,16 @@ onMounted(async () => {
 const goBack = () => {
   router.push({ name: 'athlete-dashboard' });
 };
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+};
 </script>
 
 <template>
@@ -64,22 +74,43 @@ const goBack = () => {
             </v-card-title>
             <v-card-text>
               <v-progress-linear v-if="loading" indeterminate color="#800020"></v-progress-linear>
-              <v-list v-else-if="coaches.length > 0">
-                <v-list-item v-for="coach in coaches" :key="coach.id">
-                  <template v-slot:prepend>
-                    <v-avatar color="#800020">
-                      <v-icon color="white">mdi-account</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title>{{ coach.name }}</v-list-item-title>
-                  <v-list-item-subtitle>
-                    {{ coach.email || 'No email available' }}
-                  </v-list-item-subtitle>
-                  <v-list-item-subtitle v-if="coach.specialty">
-                    Specialty: {{ coach.specialty }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
+              <v-row v-else-if="coaches.length > 0">
+                <v-col v-for="coachRel in coaches" :key="coachRel.id" cols="12" md="6" lg="4">
+                  <v-card>
+                    <v-card-title class="d-flex align-center">
+                      <v-avatar color="#800020" class="mr-3">
+                        <v-icon color="white">mdi-account-tie</v-icon>
+                      </v-avatar>
+                      <div>
+                        <div>{{ coachRel.coach?.fName }} {{ coachRel.coach?.lName }}</div>
+                        <div class="text-caption text-grey">Coach</div>
+                      </div>
+                    </v-card-title>
+                    <v-card-text>
+                      <v-list density="compact">
+                        <v-list-item>
+                          <v-list-item-title>
+                            <v-icon size="small" class="mr-1">mdi-email</v-icon>
+                            {{ coachRel.coach?.email || 'No email available' }}
+                          </v-list-item-title>
+                        </v-list-item>
+                        <v-list-item>
+                          <v-list-item-title>
+                            <v-icon size="small" class="mr-1">mdi-calendar</v-icon>
+                            Coaching since: {{ formatDate(coachRel.startDate) }}
+                          </v-list-item-title>
+                        </v-list-item>
+                      </v-list>
+                    </v-card-text>
+                    <v-card-actions>
+                      <v-btn color="#800020" variant="text" block>
+                        <v-icon left>mdi-email-send</v-icon>
+                        Contact Coach
+                      </v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-col>
+              </v-row>
               <v-alert v-else color="grey-lighten-3" variant="flat">
                 <v-icon color="#800020">mdi-information</v-icon>
                 No coaches assigned yet. Contact your administrator to be paired with a coach!
