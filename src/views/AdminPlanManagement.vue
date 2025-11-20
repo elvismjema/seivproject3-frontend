@@ -290,7 +290,7 @@ const formatCreatorName = (creator) => {
     </v-container>
 
     <!-- Create/Edit Plan Dialog -->
-    <v-dialog v-model="showCreateDialog || showEditDialog" max-width="800">
+    <v-dialog :model-value="showCreateDialog || showEditDialog" max-width="800" @update:model-value="val => { if (!val) { showCreateDialog = false; showEditDialog = false; } }">
       <v-card>
         <v-card-title>{{ showEditDialog ? 'Edit' : 'Create' }} Training Plan</v-card-title>
         <v-card-text>
