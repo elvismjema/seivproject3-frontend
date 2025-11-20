@@ -69,6 +69,11 @@ const router = createRouter({
       name: "admin-athletes",
       component: () => import("./views/AdminAthleteList.vue"),
     },
+    {
+      path: "/admin-plan-management",
+      name: "admin-plan-management",
+      component: () => import("./views/AdminPlanManagement.vue"),
+    },
     // Exercise routes
     {
       path: "/exercise-management",
