@@ -279,7 +279,7 @@ const openRecordResultDialog = () => {
 
 const viewAthleteProgress = (athleteId) => {
   router.push({ 
-    name: 'athlete-progress',
+    name: 'coach-athlete-progress',
     params: { id: athleteId }
   });
 };
