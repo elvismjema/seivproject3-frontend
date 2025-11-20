@@ -52,6 +52,12 @@ const logout = () => {
   Utils.removeItem("user");
   router.push({ name: "login" });
 };
+
+const getProgressColor = (progress) => {
+  if (progress >= 67) return 'success';
+  if (progress >= 34) return 'warning';
+  return 'error';
+};
 </script>
 
 <template>
@@ -151,7 +157,7 @@ const logout = () => {
                 <v-list-item-subtitle>
                   <v-progress-linear
                     :value="goal.progress"
-                    color="success"
+                    :color="getProgressColor(goal.progress)"
                     height="20"
                     rounded
                   >
