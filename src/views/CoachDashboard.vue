@@ -66,6 +66,10 @@ const logout = () => {
   Utils.removeItem("user");
   router.push({ name: "login" });
 };
+
+const viewAthleteProgress = (athleteId) => {
+  router.push({ name: 'athlete-progress', params: { athleteId } });
+};
 </script>
 
 <template>
@@ -159,7 +163,7 @@ const logout = () => {
                   Current Plan: {{ athlete.currentPlan || 'No plan assigned' }}
                 </v-list-item-subtitle>
                 <template v-slot:append>
-                  <v-btn size="small" color="#800020" variant="text">View Progress</v-btn>
+                  <v-btn size="small" color="#800020" variant="text" @click="viewAthleteProgress(athlete.id)">View Progress</v-btn>
                   <v-btn size="small" color="#800020" variant="outlined">Assign Plan</v-btn>
                 </template>
               </v-list-item>
