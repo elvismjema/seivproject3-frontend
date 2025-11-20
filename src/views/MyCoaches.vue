@@ -64,22 +64,40 @@ const goBack = () => {
             </v-card-title>
             <v-card-text>
               <v-progress-linear v-if="loading" indeterminate color="#800020"></v-progress-linear>
-              <v-list v-else-if="coaches.length > 0">
-                <v-list-item v-for="coach in coaches" :key="coach.id">
-                  <template v-slot:prepend>
-                    <v-avatar color="#800020">
-                      <v-icon color="white">mdi-account</v-icon>
-                    </v-avatar>
-                  </template>
-                  <v-list-item-title>{{ coach.name }}</v-list-item-title>
-                  <v-list-item-subtitle>
-                    {{ coach.email || 'No email available' }}
-                  </v-list-item-subtitle>
-                  <v-list-item-subtitle v-if="coach.specialty">
-                    Specialty: {{ coach.specialty }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
+              <v-row v-else-if="coaches.length > 0">
+                <v-col cols="12" md="6" v-for="coachRel in coaches" :key="coachRel.id">
+                  <v-card elevation="2" class="mb-3">
+                    <v-card-title class="d-flex align-center bg-grey-lighten-4">
+                      <v-avatar color="#800020" class="mr-3">
+                        <v-icon color="white">mdi-account-tie</v-icon>
+                      </v-avatar>
+                      <span>{{ coachRel.coach.fName }} {{ coachRel.coach.lName }}</span>
+                    </v-card-title>
+                    <v-card-text>
+                      <v-list density="compact">
+                        <v-list-item>
+                          <template v-slot:prepend>
+                            <v-icon color="#800020">mdi-email</v-icon>
+                          </template>
+                          <v-list-item-title>{{ coachRel.coach.email }}</v-list-item-title>
+                        </v-list-item>
+                        <v-list-item>
+                          <template v-slot:prepend>
+                            <v-icon color="#800020">mdi-calendar-check</v-icon>
+                          </template>
+                          <v-list-item-title>Coaching since {{ new Date(coachRel.startDate).toLocaleDateString() }}</v-list-item-title>
+                        </v-list-item>
+                      </v-list>
+                    </v-card-text>
+                    <v-card-actions>
+                      <v-btn color="#800020" variant="text" :href="'mailto:' + coachRel.coach.email">
+                        <v-icon left>mdi-email</v-icon>
+                        Contact Coach
+                      </v-btn>
+                    </v-card-actions>
+                  </v-card>
+                </v-col>
+              </v-row>
               <v-alert v-else color="grey-lighten-3" variant="flat">
                 <v-icon color="#800020">mdi-information</v-icon>
                 No coaches assigned yet. Contact your administrator to be paired with a coach!
