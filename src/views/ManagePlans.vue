@@ -14,8 +14,11 @@ const error = ref(null);
 
 // Dialog controls
 const showCreateDialog = ref(false);
+const showEditDialog = ref(false);
 const showPlanDetails = ref(false);
+const showDeleteConfirm = ref(false);
 const selectedPlan = ref(null);
+const planToDelete = ref(null);
 
 // New plan form
 const newPlan = ref({
@@ -109,6 +112,59 @@ const createPlan = async () => {
   }
 };
 
+const editPlan = (plan) => {
+  selectedPlan.value = { ...plan };
+  // Populate the form with existing plan data
+  newPlan.value = {
+    name: plan.name,
+    description: plan.description,
+    duration: plan.duration,
+    exercises: plan.planExercises?.map(pe => ({
+      exerciseId: pe.exerciseId,
+      dayOfWeek: pe.dayOfWeek,
+      sets: pe.sets,
+      reps: pe.reps,
+      duration: pe.duration,
+      restTime: pe.restTime,
+      exerciseName: pe.exercise?.name
+    })) || []
+  };
+  showEditDialog.value = true;
+};
+
+const updatePlan = async () => {
+  try {
+    loading.value = true;
+    await CoachServices.updatePlan(selectedPlan.value.id, newPlan.value);
+    showEditDialog.value = false;
+    resetNewPlan();
+    await loadData();
+  } catch (err) {
+    error.value = err.message;
+  } finally {
+    loading.value = false;
+  }
+};
+
+const confirmDelete = (plan) => {
+  planToDelete.value = plan;
+  showDeleteConfirm.value = true;
+};
+
+const deletePlan = async () => {
+  try {
+    loading.value = true;
+    await CoachServices.deletePlan(planToDelete.value.id);
+    showDeleteConfirm.value = false;
+    planToDelete.value = null;
+    await loadData();
+  } catch (err) {
+    error.value = err.response?.data?.message || err.message;
+  } finally {
+    loading.value = false;
+  }
+};
+
 const resetNewPlan = () => {
   newPlan.value = {
     name: '',
@@ -184,10 +240,17 @@ const logout = () => {
             </v-card-text>
             <v-card-actions>
               <v-btn color="#800020" variant="text" @click="viewPlanDetails(plan)">
-                View Details
+                View
               </v-btn>
+              <v-btn color="#800020" variant="text" @click="editPlan(plan)">
+                Edit
+              </v-btn>
+              <v-btn color="error" variant="text" @click="confirmDelete(plan)">
+                Delete
+              </v-btn>
+              <v-spacer></v-spacer>
               <v-btn color="#800020" variant="outlined" size="small">
-                Assign to Athlete
+                Assign
               </v-btn>
             </v-card-actions>
           </v-card>
@@ -357,6 +420,152 @@ const logout = () => {
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn @click="showPlanDetails = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Edit Plan Dialog -->
+    <v-dialog v-model="showEditDialog" max-width="800">
+      <v-card>
+        <v-card-title>Edit Training Plan</v-card-title>
+        <v-card-text>
+          <v-form>
+            <v-text-field
+              v-model="newPlan.name"
+              label="Plan Name"
+              required
+              variant="outlined"
+            ></v-text-field>
+            
+            <v-textarea
+              v-model="newPlan.description"
+              label="Description"
+              rows="3"
+              variant="outlined"
+            ></v-textarea>
+            
+            <v-select
+              v-model="newPlan.duration"
+              :items="[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
+              label="Duration (weeks)"
+              variant="outlined"
+            ></v-select>
+
+            <v-divider class="my-4"></v-divider>
+            
+            <h3 class="text-h6 mb-3">Edit Exercises</h3>
+            
+            <v-row>
+              <v-col cols="12" md="4">
+                <v-select
+                  v-model="newExercise.exerciseId"
+                  :items="exercises"
+                  item-title="name"
+                  item-value="id"
+                  label="Exercise"
+                  variant="outlined"
+                  dense
+                ></v-select>
+              </v-col>
+              <v-col cols="12" md="3">
+                <v-select
+                  v-model="newExercise.dayOfWeek"
+                  :items="daysOfWeek"
+                  item-title="text"
+                  item-value="value"
+                  label="Day"
+                  variant="outlined"
+                  dense
+                ></v-select>
+              </v-col>
+              <v-col cols="6" md="2">
+                <v-text-field
+                  v-model.number="newExercise.sets"
+                  label="Sets"
+                  type="number"
+                  variant="outlined"
+                  dense
+                ></v-text-field>
+              </v-col>
+              <v-col cols="6" md="2">
+                <v-text-field
+                  v-model.number="newExercise.reps"
+                  label="Reps"
+                  type="number"
+                  variant="outlined"
+                  dense
+                ></v-text-field>
+              </v-col>
+              <v-col cols="12" md="1">
+                <v-btn
+                  color="#800020"
+                  icon
+                  @click="addExerciseToPlan"
+                  :disabled="!newExercise.exerciseId"
+                >
+                  <v-icon>mdi-plus</v-icon>
+                </v-btn>
+              </v-col>
+            </v-row>
+
+            <!-- Added Exercises List -->
+            <v-list v-if="newPlan.exercises.length > 0" class="mt-4">
+              <v-list-item v-for="(ex, index) in newPlan.exercises" :key="index">
+                <v-list-item-content>
+                  <v-list-item-title>
+                    {{ ex.exerciseName }} - {{ daysOfWeek.find(d => d.value === ex.dayOfWeek)?.text }}
+                  </v-list-item-title>
+                  <v-list-item-subtitle>
+                    {{ ex.sets }} sets × {{ ex.reps }} reps
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+                <template v-slot:append>
+                  <v-btn
+                    icon
+                    size="small"
+                    variant="text"
+                    @click="removeExerciseFromPlan(index)"
+                  >
+                    <v-icon>mdi-delete</v-icon>
+                  </v-btn>
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn @click="showEditDialog = false; resetNewPlan()">Cancel</v-btn>
+          <v-btn 
+            color="#800020" 
+            variant="elevated"
+            @click="updatePlan"
+            :disabled="!newPlan.name || newPlan.exercises.length === 0"
+            :loading="loading"
+            class="text-white"
+          >
+            Update Plan
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <v-dialog v-model="showDeleteConfirm" max-width="500">
+      <v-card>
+        <v-card-title class="text-h5">Delete Plan?</v-card-title>
+        <v-card-text>
+          Are you sure you want to delete the plan "{{ planToDelete?.name }}"? This action cannot be undone.
+          <v-alert v-if="error" type="error" class="mt-3">
+            {{ error }}
+          </v-alert>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn @click="showDeleteConfirm = false; planToDelete = null; error = null">Cancel</v-btn>
+          <v-btn color="error" variant="elevated" @click="deletePlan" :loading="loading">
+            Delete
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

@@ -68,6 +68,23 @@ const CoachServices = {
     );
   },
 
+  // Update training plan
+  updatePlan: async (planId, planData) => {
+    return axios.put(
+      `${BASE_URL}/coach/plans/${planId}`,
+      planData,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Delete training plan
+  deletePlan: async (planId) => {
+    return axios.delete(
+      `${BASE_URL}/coach/plans/${planId}`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
   // Assign plan to athlete
   assignPlan: async (assignmentData) => {
     return axios.post(
