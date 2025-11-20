@@ -468,7 +468,12 @@ const saveWorkoutResult = async () => {
 
 const handleTabChange = (tab) => {
   activeTab.value = tab;
-  // You could add logic here to load tab-specific data
+  // Navigate to specific pages for certain tabs
+  if (tab === 'plans') {
+    router.push({ name: 'manage-plans' });
+  } else if (tab === 'exercises') {
+    router.push({ name: 'exercise-management' });
+  }
 };
 
 onMounted(async () => {
@@ -666,7 +671,7 @@ const logout = () => {
                   block 
                   class="mb-2 text-white" 
                   variant="elevated" 
-                  @click="dialog.createPlan = true"
+                  @click="navigateTo('manage-plans')"
                 >
                   <v-icon left>mdi-clipboard-list</v-icon>
                   Manage Plans
