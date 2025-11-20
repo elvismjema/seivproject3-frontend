@@ -27,6 +27,8 @@ const customExercises = ref([]);
 const activeGoals = ref(0);
 const weeklyResults = ref(0);
 const recentResults = ref([]);
+const plans = ref([]);
+const goals = ref([]);
 const loading = ref(true);
 const error = ref(null);
 const dialog = ref({
@@ -59,6 +61,7 @@ const daysOfWeek = [
 
 const newGoal = ref({
   athleteId: '',
+  exerciseId: '',
   title: '',
   description: '',
   targetDate: '',
@@ -99,7 +102,9 @@ const fetchCoachData = async () => {
       goalsCountResponse,
       weeklyResultsResponse,
       athletesListResponse,
-      exercisesListResponse
+      exercisesListResponse,
+      plansResponse,
+      goalsResponse
     ] = await Promise.all([
       CoachServices.getCoachAthletes(),
       CoachServices.getCoachRecentResults(),
@@ -107,7 +112,9 @@ const fetchCoachData = async () => {
       CoachServices.getActiveGoalsCount(),
       CoachServices.getWeeklyResultsCount(),
       CoachServices.getCoachAthletes(),
-      CoachServices.getExercises() // Load exercises for the plan creation form
+      CoachServices.getExercises(), // Load exercises for the plan creation form
+      CoachServices.getCoachPlans(),
+      CoachServices.getCoachGoals()
     ]);
     
     // Store available exercises for the plan creation form
@@ -137,6 +144,12 @@ const fetchCoachData = async () => {
     }
     if (weeklyResultsResponse.data && weeklyResultsResponse.data.count !== undefined) {
       weeklyResults.value = weeklyResultsResponse.data.count;
+    }
+    if (plansResponse.data && plansResponse.data.data) {
+      plans.value = plansResponse.data.data;
+    }
+    if (goalsResponse.data && goalsResponse.data.data) {
+      goals.value = goalsResponse.data.data;
     }
   } catch (err) {
     console.error('Error fetching coach data:', err);
@@ -324,6 +337,142 @@ const removeAthlete = async (athleteId, athleteName) => {
   }
 };
 
+const saveGoal = async () => {
+  // Validation
+  if (!newGoal.value.athleteId) {
+    showSnackbar('Please select an athlete', 'warning');
+    return;
+  }
+  if (!newGoal.value.exerciseId) {
+    showSnackbar('Please select an exercise', 'warning');
+    return;
+  }
+  if (!newGoal.value.title?.trim()) {
+    showSnackbar('Please enter a goal title', 'warning');
+    return;
+  }
+  if (!newGoal.value.targetValue || newGoal.value.targetValue <= 0) {
+    showSnackbar('Please enter a valid target value', 'warning');
+    return;
+  }
+  if (!newGoal.value.targetDate) {
+    showSnackbar('Please select a target date', 'warning');
+    return;
+  }
+
+  try {
+    isSavingGoal.value = true;
+    showSnackbar('Setting goal...', 'info');
+    
+    // Prepare goal data according to backend expectations
+    const goalData = {
+      athleteId: newGoal.value.athleteId,
+      exerciseId: newGoal.value.exerciseId,
+      targetValue: parseFloat(newGoal.value.targetValue),
+      targetUnit: newGoal.value.metric,
+      targetDate: newGoal.value.targetDate,
+      title: newGoal.value.title,
+      description: newGoal.value.description
+    };
+    
+    console.log('Sending goal data:', goalData);
+    
+    // Call the API
+    await CoachServices.createGoal(goalData);
+    
+    showSnackbar('Goal set successfully!', 'success');
+    
+    // Reset form and close dialog
+    dialog.value.setGoal = false;
+    newGoal.value = {
+      athleteId: '',
+      exerciseId: '',
+      title: '',
+      description: '',
+      targetDate: '',
+      targetValue: '',
+      metric: 'reps'
+    };
+    
+    // Refresh data
+    await fetchCoachData();
+  } catch (error) {
+    console.error('Error setting goal:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to set goal';
+    showSnackbar(`Error: ${errorMessage}`, 'error');
+  } finally {
+    isSavingGoal.value = false;
+  }
+};
+
+const saveWorkoutResult = async () => {
+  // Validation
+  if (!workoutResult.value.athleteId) {
+    showSnackbar('Please select an athlete', 'warning');
+    return;
+  }
+  if (!workoutResult.value.exerciseId) {
+    showSnackbar('Please select an exercise', 'warning');
+    return;
+  }
+  if (!workoutResult.value.date) {
+    showSnackbar('Please select a date', 'warning');
+    return;
+  }
+  if (!workoutResult.value.sets || workoutResult.value.sets < 1) {
+    showSnackbar('Please enter valid number of sets', 'warning');
+    return;
+  }
+  if (!workoutResult.value.reps || workoutResult.value.reps < 1) {
+    showSnackbar('Please enter valid number of reps', 'warning');
+    return;
+  }
+
+  try {
+    isSavingResult.value = true;
+    showSnackbar('Recording result...', 'info');
+    
+    // Prepare result data
+    const resultData = {
+      athleteId: workoutResult.value.athleteId,
+      exerciseId: workoutResult.value.exerciseId,
+      performedDate: workoutResult.value.date,
+      sets: parseInt(workoutResult.value.sets),
+      reps: parseInt(workoutResult.value.reps),
+      weight: parseFloat(workoutResult.value.weight) || 0,
+      notes: workoutResult.value.notes || ''
+    };
+    
+    console.log('Sending workout result:', resultData);
+    
+    // Call the API
+    await CoachServices.recordWorkoutResult(resultData);
+    
+    showSnackbar('Workout result recorded successfully!', 'success');
+    
+    // Reset form and close dialog
+    dialog.value.recordResult = false;
+    workoutResult.value = {
+      athleteId: '',
+      exerciseId: '',
+      date: new Date().toISOString().substr(0, 10),
+      sets: 1,
+      reps: 10,
+      weight: 0,
+      notes: ''
+    };
+    
+    // Refresh data
+    await fetchCoachData();
+  } catch (error) {
+    console.error('Error recording result:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to record result';
+    showSnackbar(`Error: ${errorMessage}`, 'error');
+  } finally {
+    isSavingResult.value = false;
+  }
+};
+
 const handleTabChange = (tab) => {
   activeTab.value = tab;
   // You could add logic here to load tab-specific data
@@ -343,6 +492,7 @@ const logout = () => {
   Utils.removeItem("user");
   router.push({ name: "login" });
 };
+
 </script>
 
 <template>
@@ -382,6 +532,8 @@ const logout = () => {
       </v-col>
     </v-row>
 
+    <!-- Overview Tab Content -->
+    <div v-show="activeTab === 'overview'">
     <!-- Metrics Cards -->
     <v-row class="mb-6">
       <v-col cols="12" sm="6" md="3">
@@ -588,6 +740,156 @@ const logout = () => {
         </v-card>
       </v-col>
     </v-row>
+    </div>
+    <!-- End Overview Tab -->
+
+    <!-- Athletes Tab Content -->
+    <div v-show="activeTab === 'athletes'">
+      <v-row>
+        <v-col cols="12">
+          <v-card>
+            <v-card-title class="d-flex align-center">
+              <span>My Athletes</span>
+              <v-spacer></v-spacer>
+              <v-btn color="#800020" @click="dialog.addAthlete = true">Add Athlete</v-btn>
+            </v-card-title>
+            <v-card-text>
+              <v-table v-if="athletes.length > 0">
+                <thead><tr><th>Name</th><th>Email</th><th>Plan</th><th>Actions</th></tr></thead>
+                <tbody>
+                  <tr v-for="athlete in athletes" :key="athlete.id">
+                    <td>{{ athlete.name }}</td>
+                    <td>{{ athlete.email }}</td>
+                    <td>{{ athlete.currentPlan || 'No plan' }}</td>
+                    <td>
+                      <v-btn size="small" @click="viewAthleteProgress(athlete.id)">Progress</v-btn>
+                    </td>
+                  </tr>
+                </tbody>
+              </v-table>
+              <v-alert v-else>No athletes yet</v-alert>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
+    <!-- Exercises Tab -->
+    <div v-show="activeTab === 'exercises'">
+      <v-row>
+        <v-col cols="12">
+          <v-card>
+            <v-card-title class="d-flex align-center">
+              <span>Exercises</span>
+              <v-spacer></v-spacer>
+              <v-btn color="#800020" @click="navigateTo('exercise-management')">Manage Exercises</v-btn>
+            </v-card-title>
+            <v-card-text>
+              <v-table v-if="customExercises.length > 0">
+                <thead><tr><th>Name</th><th>Category</th><th>Description</th></tr></thead>
+                <tbody>
+                  <tr v-for="ex in customExercises" :key="ex.id">
+                    <td>{{ ex.name }}</td>
+                    <td>{{ ex.category }}</td>
+                    <td>{{ ex.description || 'N/A' }}</td>
+                  </tr>
+                </tbody>
+              </v-table>
+              <v-alert v-else>No custom exercises</v-alert>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
+    <!-- Plans Tab -->
+    <div v-show="activeTab === 'plans'">
+      <v-row>
+        <v-col cols="12">
+          <v-card>
+            <v-card-title class="d-flex align-center">
+              <span>Training Plans</span>
+              <v-spacer></v-spacer>
+              <v-btn color="#800020" @click="dialog.createPlan = true">Create Plan</v-btn>
+            </v-card-title>
+            <v-card-text>
+              <v-row v-if="plans.length > 0">
+                <v-col cols="12" md="6" v-for="plan in plans" :key="plan.id">
+                  <v-card variant="outlined">
+                    <v-card-title>{{ plan.name }}</v-card-title>
+                    <v-card-text>
+                      <p>{{ plan.description }}</p>
+                      <p class="text-caption">Duration: {{ plan.duration }} weeks</p>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
+              <v-alert v-else>No plans yet</v-alert>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
+    <!-- Goals Tab -->
+    <div v-show="activeTab === 'goals'">
+      <v-row>
+        <v-col cols="12">
+          <v-card>
+            <v-card-title class="d-flex align-center">
+              <span>Athlete Goals</span>
+              <v-spacer></v-spacer>
+              <v-btn color="#800020" @click="openSetGoalDialog()">Set Goal</v-btn>
+            </v-card-title>
+            <v-card-text>
+              <v-table v-if="goals.length > 0">
+                <thead><tr><th>Athlete</th><th>Exercise</th><th>Target</th><th>Date</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr v-for="goal in goals" :key="goal.id">
+                    <td>{{ goal.athleteName }}</td>
+                    <td>{{ goal.exerciseName }}</td>
+                    <td>{{ goal.targetValue }} {{ goal.targetUnit }}</td>
+                    <td>{{ new Date(goal.targetDate).toLocaleDateString() }}</td>
+                    <td><v-chip :color="goal.status === 'active' ? 'success' : 'grey'" size="small">{{ goal.status }}</v-chip></td>
+                  </tr>
+                </tbody>
+              </v-table>
+              <v-alert v-else>No goals set yet</v-alert>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
+    <!-- Results Tab -->
+    <div v-show="activeTab === 'results'">
+      <v-row>
+        <v-col cols="12">
+          <v-card>
+            <v-card-title class="d-flex align-center">
+              <span>Workout Results</span>
+              <v-spacer></v-spacer>
+              <v-btn color="#800020" @click="dialog.recordResult = true">Record Result</v-btn>
+            </v-card-title>
+            <v-card-text>
+              <v-table v-if="recentResults.length > 0">
+                <thead><tr><th>Athlete</th><th>Exercise</th><th>Performance</th><th>Date</th></tr></thead>
+                <tbody>
+                  <tr v-for="result in recentResults" :key="result.id">
+                    <td>{{ result.athleteName }}</td>
+                    <td>{{ result.exercise }}</td>
+                    <td>{{ result.performance }}</td>
+                    <td>{{ result.date }}</td>
+                  </tr>
+                </tbody>
+              </v-table>
+              <v-alert v-else>No results yet</v-alert>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
     </v-container>
   </v-container>
 
@@ -714,6 +1016,16 @@ const logout = () => {
             item-title="name"
             item-value="id"
             label="Select Athlete"
+            required
+            class="mb-4"
+          ></v-select>
+          
+          <v-select
+            v-model="newGoal.exerciseId"
+            :items="availableExercises"
+            item-title="name"
+            item-value="id"
+            label="Select Exercise"
             required
             class="mb-4"
           ></v-select>
