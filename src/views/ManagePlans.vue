@@ -189,16 +189,14 @@ const logout = () => {
   <v-container fluid class="pa-0">
     <!-- OC Branded Header -->
     <v-app-bar color="#800020" elevation="0" class="text-white">
-      <v-btn icon @click="$router.push({ name: 'coach-dashboard' })" class="text-white">
-        <v-icon color="white">mdi-arrow-left</v-icon>
-      </v-btn>
       <v-app-bar-title class="text-white">
-        <strong>OC</strong> Exercise Tracker - Plan Management
+        <strong>OC</strong> Exercise Tracker - Manage Plans
       </v-app-bar-title>
       <v-spacer></v-spacer>
-      <v-chip class="ma-2" color="white" text-color="#800020">
-        {{ user.fName }} {{ user.lName }} (Coach)
-      </v-chip>
+      <v-btn variant="text" @click="$router.push({ name: 'coach-dashboard' })" class="text-white">
+        <v-icon left>mdi-view-dashboard</v-icon>
+        Dashboard
+      </v-btn>
       <v-btn icon @click="logout" class="text-white">
         <v-icon color="white">mdi-logout</v-icon>
       </v-btn>
@@ -207,92 +205,65 @@ const logout = () => {
     <v-container>
       <v-row class="mt-5">
         <v-col cols="12">
+          <h1 class="text-h4 mb-6">Training Plans</h1>
+        </v-col>
+      </v-row>
+
+      <!-- Create Plan Button -->
+      <v-row>
+        <v-col cols="12">
+          <v-btn 
+            color="#800020" 
+            size="large" 
+            @click="showCreateDialog = true"
+            class="text-white mb-4"
+          >
+            <v-icon left>mdi-plus</v-icon>
+            Create New Plan
+          </v-btn>
+        </v-col>
+      </v-row>
+
+      <!-- Plans List -->
+      <v-row>
+        <v-col v-for="plan in plans" :key="plan.id" cols="12" md="6" lg="4">
           <v-card>
-            <v-card-title>
-              <h2>Training Plan Library</h2>
-              <v-spacer></v-spacer>
-              <v-btn
-                color="#800020"
-                variant="elevated"
-                class="text-white"
-                @click="showCreateDialog = true"
-              >
-                <v-icon left>mdi-plus</v-icon>
-                Create Plan
-              </v-btn>
-            </v-card-title>
-
+            <v-card-title>{{ plan.name }}</v-card-title>
+            <v-card-subtitle>{{ plan.duration }} weeks</v-card-subtitle>
             <v-card-text>
-              <!-- Plans Grid -->
-              <v-row class="mt-4">
-                <v-col
-                  v-for="plan in plans"
-                  :key="plan.id"
-                  cols="12"
-                  md="6"
-                  lg="4"
-                >
-                  <v-card>
-                    <v-card-title class="d-flex align-center">
-                      <v-icon color="#800020" class="mr-2">
-                        mdi-clipboard-list
-                      </v-icon>
-                      {{ plan.name }}
-                    </v-card-title>
-
-                    <v-card-text>
-                      <p class="text-caption mb-2">
-                        <v-icon size="small">mdi-calendar</v-icon>
-                        {{ plan.duration }} weeks
-                      </p>
-                      <p v-if="plan.description" class="mb-2">{{ plan.description }}</p>
-                      <div class="mt-2">
-                        <v-chip size="small" color="#800020" variant="tonal">
-                          {{ plan.planExercises?.length || 0 }} exercises
-                        </v-chip>
-                      </div>
-                    </v-card-text>
-
-                    <v-card-actions>
-                      <v-btn
-                        size="small"
-                        color="#800020"
-                        variant="text"
-                        @click="viewPlanDetails(plan)"
-                      >
-                        <v-icon size="small">mdi-eye</v-icon>
-                        View
-                      </v-btn>
-                      <v-btn
-                        size="small"
-                        color="#800020"
-                        variant="text"
-                        @click="editPlan(plan)"
-                      >
-                        <v-icon size="small">mdi-pencil</v-icon>
-                        Edit
-                      </v-btn>
-                      <v-btn
-                        size="small"
-                        color="error"
-                        variant="text"
-                        @click="confirmDelete(plan)"
-                      >
-                        <v-icon size="small">mdi-delete</v-icon>
-                        Delete
-                      </v-btn>
-                    </v-card-actions>
-                  </v-card>
-                </v-col>
-              </v-row>
-
-              <!-- No Plans Message -->
-              <v-alert v-if="!loading && plans.length === 0" color="grey-lighten-3" variant="flat" class="mt-4">
-                <v-icon color="#800020">mdi-information</v-icon>
-                No training plans yet. Click "Create Plan" to get started.
-              </v-alert>
+              <p v-if="plan.description">{{ plan.description }}</p>
+              <div class="mt-2">
+                <v-chip size="small" class="ma-1">
+                  {{ plan.planExercises?.length || 0 }} exercises
+                </v-chip>
+              </div>
             </v-card-text>
+            <v-card-actions>
+              <v-btn color="#800020" variant="text" @click="viewPlanDetails(plan)">
+                View
+              </v-btn>
+              <v-btn color="#800020" variant="text" @click="editPlan(plan)">
+                Edit
+              </v-btn>
+              <v-btn color="error" variant="text" @click="confirmDelete(plan)">
+                Delete
+              </v-btn>
+              <v-spacer></v-spacer>
+              <v-btn color="#800020" variant="outlined" size="small">
+                Assign
+              </v-btn>
+            </v-card-actions>
           </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- No Plans Message -->
+      <v-row v-if="!loading && plans.length === 0">
+        <v-col cols="12">
+          <v-alert color="grey-lighten-3" variant="flat">
+            <v-icon color="#800020">mdi-information</v-icon>
+            No training plans yet. Click "Create New Plan" to get started.
+          </v-alert>
         </v-col>
       </v-row>
     </v-container>
