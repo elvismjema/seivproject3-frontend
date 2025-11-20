@@ -86,6 +86,14 @@ const CoachServices = {
     );
   },
 
+  // Get coach's goals
+  getCoachGoals: async () => {
+    return axios.get(
+      `${BASE_URL}/coach/goals`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
   // Get recent athlete results
   getCoachRecentResults: async (limit = 20) => {
     return axios.get(
@@ -148,6 +156,15 @@ const CoachServices = {
   getWeeklyResultsCount: async () => {
     return axios.get(
       `${BASE_URL}/coach/results/weekly/count`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Record workout result for athlete
+  recordWorkoutResult: async (resultData) => {
+    return axios.post(
+      `${BASE_URL}/coach/results`,
+      resultData,
       { headers: getAuthHeaders() }
     );
   }
