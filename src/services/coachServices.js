@@ -94,6 +94,15 @@ const CoachServices = {
     );
   },
 
+  // Unassign plan from athlete
+  unassignPlan: async (unassignmentData) => {
+    return axios.post(
+      `${BASE_URL}/coach/plans/unassign`,
+      unassignmentData,
+      { headers: getAuthHeaders() }
+    );
+  },
+
   // Create goal for athlete
   createGoal: async (goalData) => {
     return axios.post(
