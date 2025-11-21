@@ -35,8 +35,11 @@ const dialog = ref({
   addAthlete: false,
   createPlan: false,
   setGoal: false,
-  recordResult: false
+  recordResult: false,
+  assignPlan: false
 });
+
+const selectedAthleteForPlan = ref(null);
 
 // Form data
 const newAthleteEmail = ref('');
@@ -298,30 +301,56 @@ const viewAthleteProgress = (athleteId) => {
   });
 };
 
-const assignPlanToAthlete = async (athleteId) => {
+const assignPlanToAthlete = (athlete) => {
+  if (plans.value.length === 0) {
+    showSnackbar('No plans available. Please create a plan first.', 'warning');
+    return;
+  }
+  selectedAthleteForPlan.value = athlete;
+  dialog.value.assignPlan = true;
+};
+
+const confirmAssignPlan = async (planId) => {
   try {
-    // Fetch available plans
-    const response = await CoachServices.getCoachPlans();
-    const plans = response.data?.data || [];
-    
-    if (plans.length === 0) {
-      showSnackbar('No plans available. Please create a plan first.', 'warning');
-      return;
-    }
-    
-    // Here you would typically open a dialog to select a plan
-    // For now, we'll just assign the first available plan
     await CoachServices.assignPlan({
-      planId: plans[0].id,
-      athleteId: athleteId,
+      planId: planId,
+      athleteId: selectedAthleteForPlan.value.id,
       startDate: new Date().toISOString().split('T')[0]
     });
     
     showSnackbar('Plan assigned successfully', 'success');
+    dialog.value.assignPlan = false;
+    selectedAthleteForPlan.value = null;
     await fetchCoachData();
   } catch (error) {
     console.error('Error assigning plan:', error);
-    showSnackbar('Failed to assign plan', 'error');
+    const errorMessage = error.response?.data?.message || 'Failed to assign plan';
+    showSnackbar(errorMessage, 'error');
+  }
+};
+
+const unassignPlan = async (athleteId, planName) => {
+  if (!confirm(`Remove plan "${planName}" from this athlete?`)) return;
+  
+  try {
+    // Find the plan by name
+    const plan = plans.value.find(p => p.name === planName);
+    if (!plan) {
+      showSnackbar('Plan not found', 'error');
+      return;
+    }
+    
+    await CoachServices.unassignPlan({
+      athleteId: athleteId,
+      planId: plan.id
+    });
+    
+    showSnackbar('Plan removed successfully', 'success');
+    await fetchCoachData();
+  } catch (error) {
+    console.error('Error removing plan:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to remove plan';
+    showSnackbar(errorMessage, 'error');
   }
 };
 
@@ -622,7 +651,7 @@ const logout = () => {
                     size="small" 
                     color="#800020" 
                     variant="outlined"
-                    @click="assignPlanToAthlete(athlete.id)"
+                    @click="assignPlanToAthlete(athlete)"
                     class="mr-2"
                   >
                     <v-icon left size="small">mdi-clipboard-list</v-icon>
@@ -758,7 +787,20 @@ const logout = () => {
                   <tr v-for="athlete in athletes" :key="athlete.id">
                     <td>{{ athlete.name }}</td>
                     <td>{{ athlete.email }}</td>
-                    <td>{{ athlete.currentPlan || 'No plan' }}</td>
+                    <td>
+                      {{ athlete.currentPlan || 'No plan' }}
+                      <v-btn
+                        v-if="athlete.currentPlan"
+                        icon
+                        size="x-small"
+                        variant="text"
+                        color="error"
+                        @click="unassignPlan(athlete.id, athlete.currentPlan)"
+                        class="ml-2"
+                      >
+                        <v-icon size="small">mdi-close-circle</v-icon>
+                      </v-btn>
+                    </td>
                     <td>
                       <v-btn size="small" @click="viewAthleteProgress(athlete.id)">Progress</v-btn>
                     </td>
@@ -1184,4 +1226,60 @@ const logout = () => {
       </v-btn>
     </template>
   </v-snackbar>
+
+  <!-- Assign Plan Dialog -->
+  <v-dialog v-model="dialog.assignPlan" max-width="600px">
+    <v-card>
+      <v-card-title>Assign Plan to {{ selectedAthleteForPlan?.name }}</v-card-title>
+      <v-card-text>
+        <v-alert v-if="plans.length === 0" type="info" class="mb-4">
+          No training plans available. Create a plan first.
+        </v-alert>
+        
+        <v-list v-if="plans.length > 0">
+          <v-list-item
+            v-for="plan in plans"
+            :key="plan.id"
+            @click="confirmAssignPlan(plan.id)"
+            class="plan-item"
+          >
+            <v-list-item-title class="font-weight-bold">{{ plan.name }}</v-list-item-title>
+            <v-list-item-subtitle>
+              <div>{{ plan.description || 'No description' }}</div>
+              <div class="text-caption mt-1">
+                Duration: {{ plan.duration }} weeks • {{ plan.planExercises?.length || 0 }} exercises
+              </div>
+            </v-list-item-subtitle>
+            <template v-slot:append>
+              <v-btn 
+                color="#800020" 
+                variant="outlined" 
+                size="small"
+              >
+                Assign
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn color="grey" text @click="dialog.assignPlan = false; selectedAthleteForPlan = null">
+          Cancel
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
+
+<style scoped>
+.plan-item {
+  cursor: pointer;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.plan-item:hover {
+  background-color: rgba(128, 0, 32, 0.05);
+}
+</style>
