@@ -106,6 +106,14 @@ const AdminServices = {
       `${BASE_URL}/exercises/${exerciseId}`,
       { headers: getAuthHeaders() }
     );
+  },
+
+  // Alias for getAllExercises to match coach services API
+  getExercises: async () => {
+    return axios.get(
+      `${BASE_URL}/exercises`,
+      { headers: getAuthHeaders() }
+    );
   }
 };
 
