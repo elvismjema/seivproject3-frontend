@@ -428,6 +428,27 @@ const saveGoal = async () => {
   }
 };
 
+const deleteGoal = async (goalId, goalName) => {
+  if (!confirm(`Are you sure you want to delete the goal "${goalName}"?`)) return;
+  
+  try {
+    await CoachServices.deleteGoal(goalId);
+    showSnackbar('Goal deleted successfully', 'success');
+    await fetchCoachData();
+  } catch (error) {
+    console.error('Error deleting goal:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to delete goal';
+    showSnackbar(errorMessage, 'error');
+  }
+};
+
+const getStatusColor = (status) => {
+  if (status === 'active') return '#FFA500'; // Orange/Yellow
+  if (status === 'completed') return '#4CAF50'; // Green
+  if (status === 'incomplete') return '#F44336'; // Red
+  return '#9E9E9E'; // Grey for others
+};
+
 const saveWorkoutResult = async () => {
   // Validation
   if (!workoutResult.value.athleteId) {
@@ -901,14 +922,33 @@ const logout = () => {
             </v-card-title>
             <v-card-text>
               <v-table v-if="goals.length > 0">
-                <thead><tr><th>Athlete</th><th>Exercise</th><th>Target</th><th>Date</th><th>Status</th></tr></thead>
+                <thead><tr><th>Athlete</th><th>Exercise</th><th>Target</th><th>Deadline</th><th>Progress</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
                   <tr v-for="goal in goals" :key="goal.id">
                     <td>{{ goal.athleteName }}</td>
                     <td>{{ goal.exerciseName }}</td>
                     <td>{{ goal.targetValue }} {{ goal.targetUnit }}</td>
                     <td>{{ new Date(goal.targetDate).toLocaleDateString() }}</td>
-                    <td><v-chip :color="goal.status === 'active' ? 'success' : 'grey'" size="small">{{ goal.status }}</v-chip></td>
+                    <td>{{ goal.progress }}%</td>
+                    <td>
+                      <v-chip 
+                        :style="{ backgroundColor: getStatusColor(goal.status), color: 'white', opacity: 0.85 }" 
+                        size="small"
+                      >
+                        {{ goal.status === 'completed' ? 'Completed!' : goal.status }}
+                      </v-chip>
+                    </td>
+                    <td>
+                      <v-btn 
+                        icon 
+                        size="small" 
+                        color="error" 
+                        variant="text"
+                        @click="deleteGoal(goal.id, `${goal.exerciseName} for ${goal.athleteName}`)"
+                      >
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </td>
                   </tr>
                 </tbody>
               </v-table>
