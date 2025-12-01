@@ -329,20 +329,18 @@ const confirmAssignPlan = async (planId) => {
   }
 };
 
-const unassignPlan = async (athleteId, planName) => {
+const unassignPlan = async (athleteId, planName, planId) => {
   if (!confirm(`Remove plan "${planName}" from this athlete?`)) return;
   
   try {
-    // Find the plan by name
-    const plan = plans.value.find(p => p.name === planName);
-    if (!plan) {
-      showSnackbar('Plan not found', 'error');
+    if (!planId) {
+      showSnackbar('Plan ID not found', 'error');
       return;
     }
     
     await CoachServices.unassignPlan({
       athleteId: athleteId,
-      planId: plan.id
+      planId: planId
     });
     
     showSnackbar('Plan removed successfully', 'success');
@@ -795,7 +793,7 @@ const logout = () => {
                         size="x-small"
                         variant="text"
                         color="error"
-                        @click="unassignPlan(athlete.id, athlete.currentPlan)"
+                        @click="unassignPlan(athlete.id, athlete.currentPlan, athlete.currentPlanId)"
                         class="ml-2"
                       >
                         <v-icon size="small">mdi-close-circle</v-icon>
