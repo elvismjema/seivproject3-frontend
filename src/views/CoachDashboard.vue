@@ -78,6 +78,8 @@ const workoutResult = ref({
   reps: 10,
   weight: 0,
   duration: null,
+  timeValue: null,
+  timeUnit: 'seconds',
   notes: ''
 });
 
@@ -454,6 +456,19 @@ const saveWorkoutResult = async () => {
     showSnackbar('Recording result...', 'info');
     
     // Prepare result data
+    // Convert time to seconds based on selected unit
+    let durationInSeconds = null;
+    if (workoutResult.value.timeValue) {
+      const timeValue = parseFloat(workoutResult.value.timeValue);
+      if (workoutResult.value.timeUnit === 'minutes') {
+        durationInSeconds = Math.round(timeValue * 60);
+      } else if (workoutResult.value.timeUnit === 'hours') {
+        durationInSeconds = Math.round(timeValue * 3600);
+      } else {
+        durationInSeconds = Math.round(timeValue);
+      }
+    }
+
     const resultData = {
       athleteId: workoutResult.value.athleteId,
       exerciseId: workoutResult.value.exerciseId,
@@ -461,7 +476,7 @@ const saveWorkoutResult = async () => {
       sets: parseInt(workoutResult.value.sets),
       reps: parseInt(workoutResult.value.reps),
       weight: parseFloat(workoutResult.value.weight) || 0,
-      duration: workoutResult.value.duration ? parseInt(workoutResult.value.duration) : null,
+      duration: durationInSeconds,
       notes: workoutResult.value.notes || ''
     };
     
@@ -482,6 +497,8 @@ const saveWorkoutResult = async () => {
       reps: 10,
       weight: 0,
       duration: null,
+      timeValue: null,
+      timeUnit: 'seconds',
       notes: ''
     };
     
@@ -1190,16 +1207,27 @@ const logout = () => {
           </v-row>
           
           <v-row>
-            <v-col cols="12">
+            <v-col cols="8">
               <v-text-field
-                v-model.number="workoutResult.duration"
-                label="Time (seconds)"
+                v-model.number="workoutResult.timeValue"
+                label="Time"
                 type="number"
                 min="0"
+                step="0.1"
                 hint="Optional - for timed exercises like running, swimming, or batting practice"
                 persistent-hint
-                suffix="seconds"
               ></v-text-field>
+            </v-col>
+            <v-col cols="4">
+              <v-select
+                v-model="workoutResult.timeUnit"
+                :items="[
+                  { title: 'Seconds', value: 'seconds' },
+                  { title: 'Minutes', value: 'minutes' },
+                  { title: 'Hours', value: 'hours' }
+                ]"
+                label="Unit"
+              ></v-select>
             </v-col>
           </v-row>
           
