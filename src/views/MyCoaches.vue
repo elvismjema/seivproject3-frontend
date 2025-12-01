@@ -76,8 +76,8 @@ const formatDate = (dateString) => {
               <v-progress-linear v-if="loading" indeterminate color="#800020"></v-progress-linear>
               <v-row v-else-if="coaches.length > 0">
                 <v-col v-for="coachRel in coaches" :key="coachRel.id" cols="12" md="6" lg="4">
-                  <v-card>
-                    <v-card-title class="d-flex align-center">
+                  <v-card elevation="2" class="mb-3">
+                    <v-card-title class="d-flex align-center bg-grey-lighten-4">
                       <v-avatar color="#800020" class="mr-3">
                         <v-icon color="white">mdi-account-tie</v-icon>
                       </v-avatar>
@@ -103,7 +103,7 @@ const formatDate = (dateString) => {
                       </v-list>
                     </v-card-text>
                     <v-card-actions>
-                      <v-btn color="#800020" variant="text" block>
+                      <v-btn color="#800020" variant="text" block :href="'mailto:' + coachRel.coach?.email">
                         <v-icon left>mdi-email-send</v-icon>
                         Contact Coach
                       </v-btn>
