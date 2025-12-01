@@ -35,6 +35,16 @@ jobs:
       - run: npm run build
       - run: npm run bundle
 
+      - name: Ensure deployment directory exists
+        uses: appleboy/ssh-action@master
+        with:
+          host: project2.eaglesoftwareteam.com
+          username: ubuntu
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            mkdir -p /var/www/html/seiv2025/p3/t2/assets
+            chmod -R 755 /var/www/html/seiv2025/p3/t2
+
       - name: Deploy to Server
         uses: easingthemes/ssh-deploy@v2.1.1
         env:
