@@ -120,6 +120,14 @@ const CoachServices = {
     );
   },
 
+  // Delete goal
+  deleteGoal: async (goalId) => {
+    return axios.delete(
+      `${BASE_URL}/coach/goals/${goalId}`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
   // Get recent athlete results
   getCoachRecentResults: async (limit = 20) => {
     return axios.get(
