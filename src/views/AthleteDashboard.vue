@@ -8,6 +8,8 @@ const router = useRouter();
 const user = ref({});
 const todayWorkout = ref(null);
 const activeGoals = ref([]);
+const completedGoals = ref([]);
+const incompleteGoals = ref([]);
 const recentProgress = ref({
   workoutsThisWeek: 0,
   personalRecords: 0
@@ -35,7 +37,9 @@ onMounted(async () => {
       todayWorkout.value = workoutResponse.data.data;
     }
     if (goalsResponse.data && goalsResponse.data.data) {
-      activeGoals.value = goalsResponse.data.data;
+      activeGoals.value = goalsResponse.data.data.active || [];
+      completedGoals.value = goalsResponse.data.data.completed || [];
+      incompleteGoals.value = goalsResponse.data.data.incomplete || [];
     }
     if (statsResponse.data && statsResponse.data.data) {
       recentProgress.value = statsResponse.data.data;
@@ -58,6 +62,13 @@ const getProgressColor = (progress) => {
   if (progress >= 67) return 'success';
   if (progress >= 34) return 'warning';
   return 'error';
+};
+
+const getStatusColor = (status) => {
+  if (status === 'active') return '#FFA500';
+  if (status === 'completed') return '#4CAF50';
+  if (status === 'incomplete') return '#F44336';
+  return '#9E9E9E';
 };
 
 const filteredGoals = computed(() => {
@@ -235,6 +246,49 @@ const isDeadlineApproaching = (deadline) => {
               <v-icon color="#800020">mdi-information</v-icon>
               No active goals. Talk to your coach about setting some!
             </v-alert>
+          </v-card-text>
+        </v-card>
+
+        <v-card class="mt-3" v-if="completedGoals.length > 0">
+          <v-card-title class="d-flex align-center">
+            Completed Goals
+            <v-spacer></v-spacer>
+            <v-chip :style="{ backgroundColor: getStatusColor('completed'), color: 'white', opacity: 0.85 }" size="small">{{ completedGoals.length }}</v-chip>
+          </v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item v-for="goal in completedGoals" :key="goal.id" class="mb-2">
+                <div class="w-100">
+                  <v-list-item-title>{{ goal.name }}</v-list-item-title>
+                  <v-list-item-subtitle class="text-caption">
+                    Completed: {{ new Date(goal.completedDate).toLocaleDateString() }}
+                  </v-list-item-subtitle>
+                </div>
+                <template v-slot:append>
+                  <v-icon color="#4CAF50">mdi-check-circle</v-icon>
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+
+        <v-card class="mt-3" v-if="incompleteGoals.length > 0">
+          <v-card-title class="d-flex align-center">
+            Incomplete Goals
+            <v-spacer></v-spacer>
+            <v-chip :style="{ backgroundColor: getStatusColor('incomplete'), color: 'white', opacity: 0.85 }" size="small">{{ incompleteGoals.length }}</v-chip>
+          </v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item v-for="goal in incompleteGoals" :key="goal.id" class="mb-2">
+                <div class="w-100">
+                  <v-list-item-title>{{ goal.name }}</v-list-item-title>
+                  <v-list-item-subtitle class="text-caption">
+                    Deadline passed: {{ new Date(goal.targetDate).toLocaleDateString() }} • Progress: {{ goal.progress }}%
+                  </v-list-item-subtitle>
+                </div>
+              </v-list-item>
+            </v-list>
           </v-card-text>
         </v-card>
       </v-col>

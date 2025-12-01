@@ -35,8 +35,11 @@ const dialog = ref({
   addAthlete: false,
   createPlan: false,
   setGoal: false,
-  recordResult: false
+  recordResult: false,
+  assignPlan: false
 });
+
+const selectedAthleteForPlan = ref(null);
 
 // Form data
 const newAthleteEmail = ref('');
@@ -74,6 +77,9 @@ const workoutResult = ref({
   sets: 1,
   reps: 10,
   weight: 0,
+  duration: null,
+  timeValue: null,
+  timeUnit: 'seconds',
   notes: ''
 });
 
@@ -228,8 +234,11 @@ const savePlan = async () => {
       dayCheck: newPlan.value.days.join(','),
       exercises: newPlan.value.exercises.map(exerciseId => ({
         exerciseId: exerciseId,
+        dayOfWeek: 1, // Default to Monday, you can enhance this to let coaches select
         sets: 3,
-        reps: 10
+        reps: 10,
+        duration: null,
+        restTime: 60
       })),
       isPublic: newPlan.value.isPublic
     };
@@ -295,30 +304,54 @@ const viewAthleteProgress = (athleteId) => {
   });
 };
 
-const assignPlanToAthlete = async (athleteId) => {
+const assignPlanToAthlete = (athlete) => {
+  if (plans.value.length === 0) {
+    showSnackbar('No plans available. Please create a plan first.', 'warning');
+    return;
+  }
+  selectedAthleteForPlan.value = athlete;
+  dialog.value.assignPlan = true;
+};
+
+const confirmAssignPlan = async (planId) => {
   try {
-    // Fetch available plans
-    const response = await CoachServices.getCoachPlans();
-    const plans = response.data?.data || [];
-    
-    if (plans.length === 0) {
-      showSnackbar('No plans available. Please create a plan first.', 'warning');
-      return;
-    }
-    
-    // Here you would typically open a dialog to select a plan
-    // For now, we'll just assign the first available plan
     await CoachServices.assignPlan({
-      planId: plans[0].id,
-      athleteId: athleteId,
+      planId: planId,
+      athleteId: selectedAthleteForPlan.value.id,
       startDate: new Date().toISOString().split('T')[0]
     });
     
     showSnackbar('Plan assigned successfully', 'success');
+    dialog.value.assignPlan = false;
+    selectedAthleteForPlan.value = null;
     await fetchCoachData();
   } catch (error) {
     console.error('Error assigning plan:', error);
-    showSnackbar('Failed to assign plan', 'error');
+    const errorMessage = error.response?.data?.message || 'Failed to assign plan';
+    showSnackbar(errorMessage, 'error');
+  }
+};
+
+const unassignPlan = async (athleteId, planName, planId) => {
+  if (!confirm(`Remove plan "${planName}" from this athlete?`)) return;
+  
+  try {
+    if (!planId) {
+      showSnackbar('Plan ID not found', 'error');
+      return;
+    }
+    
+    await CoachServices.unassignPlan({
+      athleteId: athleteId,
+      planId: planId
+    });
+    
+    showSnackbar('Plan removed successfully', 'success');
+    await fetchCoachData();
+  } catch (error) {
+    console.error('Error removing plan:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to remove plan';
+    showSnackbar(errorMessage, 'error');
   }
 };
 
@@ -395,6 +428,27 @@ const saveGoal = async () => {
   }
 };
 
+const deleteGoal = async (goalId, goalName) => {
+  if (!confirm(`Are you sure you want to delete the goal "${goalName}"?`)) return;
+  
+  try {
+    await CoachServices.deleteGoal(goalId);
+    showSnackbar('Goal deleted successfully', 'success');
+    await fetchCoachData();
+  } catch (error) {
+    console.error('Error deleting goal:', error);
+    const errorMessage = error.response?.data?.message || 'Failed to delete goal';
+    showSnackbar(errorMessage, 'error');
+  }
+};
+
+const getStatusColor = (status) => {
+  if (status === 'active') return '#FFA500'; // Orange/Yellow
+  if (status === 'completed') return '#4CAF50'; // Green
+  if (status === 'incomplete') return '#F44336'; // Red
+  return '#9E9E9E'; // Grey for others
+};
+
 const saveWorkoutResult = async () => {
   // Validation
   if (!workoutResult.value.athleteId) {
@@ -423,6 +477,19 @@ const saveWorkoutResult = async () => {
     showSnackbar('Recording result...', 'info');
     
     // Prepare result data
+    // Convert time to seconds based on selected unit
+    let durationInSeconds = null;
+    if (workoutResult.value.timeValue) {
+      const timeValue = parseFloat(workoutResult.value.timeValue);
+      if (workoutResult.value.timeUnit === 'minutes') {
+        durationInSeconds = Math.round(timeValue * 60);
+      } else if (workoutResult.value.timeUnit === 'hours') {
+        durationInSeconds = Math.round(timeValue * 3600);
+      } else {
+        durationInSeconds = Math.round(timeValue);
+      }
+    }
+
     const resultData = {
       athleteId: workoutResult.value.athleteId,
       exerciseId: workoutResult.value.exerciseId,
@@ -430,6 +497,7 @@ const saveWorkoutResult = async () => {
       sets: parseInt(workoutResult.value.sets),
       reps: parseInt(workoutResult.value.reps),
       weight: parseFloat(workoutResult.value.weight) || 0,
+      duration: durationInSeconds,
       notes: workoutResult.value.notes || ''
     };
     
@@ -449,6 +517,9 @@ const saveWorkoutResult = async () => {
       sets: 1,
       reps: 10,
       weight: 0,
+      duration: null,
+      timeValue: null,
+      timeUnit: 'seconds',
       notes: ''
     };
     
@@ -465,7 +536,12 @@ const saveWorkoutResult = async () => {
 
 const handleTabChange = (tab) => {
   activeTab.value = tab;
-  // You could add logic here to load tab-specific data
+  // Navigate to specific pages for certain tabs
+  if (tab === 'plans') {
+    router.push({ name: 'manage-plans' });
+  } else if (tab === 'exercises') {
+    router.push({ name: 'exercise-management' });
+  }
 };
 
 onMounted(async () => {
@@ -614,7 +690,7 @@ const logout = () => {
                     size="small" 
                     color="#800020" 
                     variant="outlined"
-                    @click="assignPlanToAthlete(athlete.id)"
+                    @click="assignPlanToAthlete(athlete)"
                     class="mr-2"
                   >
                     <v-icon left size="small">mdi-clipboard-list</v-icon>
@@ -663,10 +739,10 @@ const logout = () => {
                   block 
                   class="mb-2 text-white" 
                   variant="elevated" 
-                  @click="dialog.createPlan = true"
+                  @click="navigateTo('manage-plans')"
                 >
                   <v-icon left>mdi-clipboard-list</v-icon>
-                  Create Plan
+                  Manage Plans
                 </v-btn>
               </v-list-item>
               <v-list-item class="px-0">
@@ -750,7 +826,20 @@ const logout = () => {
                   <tr v-for="athlete in athletes" :key="athlete.id">
                     <td>{{ athlete.name }}</td>
                     <td>{{ athlete.email }}</td>
-                    <td>{{ athlete.currentPlan || 'No plan' }}</td>
+                    <td>
+                      {{ athlete.currentPlan || 'No plan' }}
+                      <v-btn
+                        v-if="athlete.currentPlan"
+                        icon
+                        size="x-small"
+                        variant="text"
+                        color="error"
+                        @click="unassignPlan(athlete.id, athlete.currentPlan, athlete.currentPlanId)"
+                        class="ml-2"
+                      >
+                        <v-icon size="small">mdi-close-circle</v-icon>
+                      </v-btn>
+                    </td>
                     <td>
                       <v-btn size="small" @click="viewAthleteProgress(athlete.id)">Progress</v-btn>
                     </td>
@@ -833,14 +922,33 @@ const logout = () => {
             </v-card-title>
             <v-card-text>
               <v-table v-if="goals.length > 0">
-                <thead><tr><th>Athlete</th><th>Exercise</th><th>Target</th><th>Date</th><th>Status</th></tr></thead>
+                <thead><tr><th>Athlete</th><th>Exercise</th><th>Target</th><th>Deadline</th><th>Progress</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
                   <tr v-for="goal in goals" :key="goal.id">
                     <td>{{ goal.athleteName }}</td>
                     <td>{{ goal.exerciseName }}</td>
                     <td>{{ goal.targetValue }} {{ goal.targetUnit }}</td>
                     <td>{{ new Date(goal.targetDate).toLocaleDateString() }}</td>
-                    <td><v-chip :color="goal.status === 'active' ? 'success' : 'grey'" size="small">{{ goal.status }}</v-chip></td>
+                    <td>{{ goal.progress }}%</td>
+                    <td>
+                      <v-chip 
+                        :style="{ backgroundColor: getStatusColor(goal.status), color: 'white', opacity: 0.85 }" 
+                        size="small"
+                      >
+                        {{ goal.status === 'completed' ? 'Completed!' : goal.status }}
+                      </v-chip>
+                    </td>
+                    <td>
+                      <v-btn 
+                        icon 
+                        size="small" 
+                        color="error" 
+                        variant="text"
+                        @click="deleteGoal(goal.id, `${goal.exerciseName} for ${goal.athleteName}`)"
+                      >
+                        <v-icon>mdi-delete</v-icon>
+                      </v-btn>
+                    </td>
                   </tr>
                 </tbody>
               </v-table>
@@ -1138,6 +1246,31 @@ const logout = () => {
             </v-col>
           </v-row>
           
+          <v-row>
+            <v-col cols="8">
+              <v-text-field
+                v-model.number="workoutResult.timeValue"
+                label="Time"
+                type="number"
+                min="0"
+                step="0.1"
+                hint="Optional - for timed exercises like running, swimming, or batting practice"
+                persistent-hint
+              ></v-text-field>
+            </v-col>
+            <v-col cols="4">
+              <v-select
+                v-model="workoutResult.timeUnit"
+                :items="[
+                  { title: 'Seconds', value: 'seconds' },
+                  { title: 'Minutes', value: 'minutes' },
+                  { title: 'Hours', value: 'hours' }
+                ]"
+                label="Unit"
+              ></v-select>
+            </v-col>
+          </v-row>
+          
           <v-textarea
             v-model="workoutResult.notes"
             label="Notes"
@@ -1176,4 +1309,60 @@ const logout = () => {
       </v-btn>
     </template>
   </v-snackbar>
+
+  <!-- Assign Plan Dialog -->
+  <v-dialog v-model="dialog.assignPlan" max-width="600px">
+    <v-card>
+      <v-card-title>Assign Plan to {{ selectedAthleteForPlan?.name }}</v-card-title>
+      <v-card-text>
+        <v-alert v-if="plans.length === 0" type="info" class="mb-4">
+          No training plans available. Create a plan first.
+        </v-alert>
+        
+        <v-list v-if="plans.length > 0">
+          <v-list-item
+            v-for="plan in plans"
+            :key="plan.id"
+            @click="confirmAssignPlan(plan.id)"
+            class="plan-item"
+          >
+            <v-list-item-title class="font-weight-bold">{{ plan.name }}</v-list-item-title>
+            <v-list-item-subtitle>
+              <div>{{ plan.description || 'No description' }}</div>
+              <div class="text-caption mt-1">
+                Duration: {{ plan.duration }} weeks • {{ plan.planExercises?.length || 0 }} exercises
+              </div>
+            </v-list-item-subtitle>
+            <template v-slot:append>
+              <v-btn 
+                color="#800020" 
+                variant="outlined" 
+                size="small"
+              >
+                Assign
+              </v-btn>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn color="grey" text @click="dialog.assignPlan = false; selectedAthleteForPlan = null">
+          Cancel
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
+
+<style scoped>
+.plan-item {
+  cursor: pointer;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.plan-item:hover {
+  background-color: rgba(128, 0, 32, 0.05);
+}
+</style>
