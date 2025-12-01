@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Utils from '../config/utils.js';
 import AthleteServices from '../services/athleteServices.js';
@@ -54,9 +54,45 @@ const logout = () => {
 };
 
 const getProgressColor = (progress) => {
+  if (progress >= 100) return 'success';
   if (progress >= 67) return 'success';
   if (progress >= 34) return 'warning';
   return 'error';
+};
+
+const filteredGoals = computed(() => {
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  
+  return activeGoals.value.filter(goal => {
+    // Show all incomplete goals
+    if (goal.progress < 100 || goal.status !== 'completed') return true;
+    // For completed goals, only show if completed within last week
+    if (goal.completedAt) {
+      const completedDate = new Date(goal.completedAt);
+      return completedDate > oneWeekAgo;
+    }
+    // If no completedAt date but marked complete, hide after a week from deadline
+    if (goal.deadline) {
+      const deadline = new Date(goal.deadline);
+      return deadline > oneWeekAgo;
+    }
+    return true;
+  });
+});
+
+const formatDeadline = (deadline) => {
+  if (!deadline) return 'No deadline';
+  const date = new Date(deadline);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+const isDeadlineApproaching = (deadline) => {
+  if (!deadline) return false;
+  const now = new Date();
+  const deadlineDate = new Date(deadline);
+  const daysUntil = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
+  return daysUntil <= 7 && daysUntil > 0;
 };
 </script>
 
@@ -149,21 +185,50 @@ const getProgressColor = (progress) => {
         </v-card>
 
         <v-card>
-          <v-card-title>Active Goals</v-card-title>
+          <v-card-title class="d-flex align-center">
+            <v-icon color="#800020" class="mr-2">mdi-bullseye-arrow</v-icon>
+            Active Goals
+            <v-spacer></v-spacer>
+            <v-chip size="small" color="#800020" variant="flat" class="text-white">
+              {{ filteredGoals.length }}
+            </v-chip>
+          </v-card-title>
           <v-card-text>
-            <v-list v-if="activeGoals.length > 0">
-              <v-list-item v-for="goal in activeGoals" :key="goal.id">
-                <v-list-item-title>{{ goal.name }}</v-list-item-title>
-                <v-list-item-subtitle>
+            <v-list v-if="filteredGoals.length > 0">
+              <v-list-item v-for="goal in filteredGoals" :key="goal.id" class="mb-3">
+                <div class="w-100">
+                  <div class="d-flex align-center justify-space-between mb-2">
+                    <v-list-item-title class="font-weight-bold">{{ goal.name }}</v-list-item-title>
+                    <v-chip
+                      v-if="goal.progress >= 100"
+                      size="x-small"
+                      color="success"
+                      variant="flat"
+                      class="text-white"
+                    >
+                      <v-icon size="x-small" left>mdi-check</v-icon>
+                      Complete
+                    </v-chip>
+                  </div>
                   <v-progress-linear
-                    :value="goal.progress"
-                    :color="getProgressColor(goal.progress)"
-                    height="20"
+                    :model-value="goal.progress"
+                    :color="goal.progress >= 100 ? 'success' : getProgressColor(goal.progress)"
+                    height="25"
                     rounded
+                    class="mb-1"
                   >
-                    {{ goal.progress }}%
+                    <strong class="text-white">{{ Math.round(goal.progress) }}%</strong>
                   </v-progress-linear>
-                </v-list-item-subtitle>
+                  <div class="d-flex justify-space-between text-caption text-grey-darken-1">
+                    <span>
+                      <v-icon size="x-small" :color="isDeadlineApproaching(goal.deadline) ? 'error' : '#800020'">mdi-calendar-clock</v-icon>
+                      Deadline: {{ formatDeadline(goal.deadline) }}
+                    </span>
+                    <span v-if="goal.targetValue">
+                      {{ goal.currentValue || 0 }} / {{ goal.targetValue }} {{ goal.unit || '' }}
+                    </span>
+                  </div>
+                </div>
               </v-list-item>
             </v-list>
             <v-alert v-else color="grey-lighten-3" variant="flat">
