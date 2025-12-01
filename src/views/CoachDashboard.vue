@@ -77,6 +77,7 @@ const workoutResult = ref({
   sets: 1,
   reps: 10,
   weight: 0,
+  duration: null,
   notes: ''
 });
 
@@ -460,6 +461,7 @@ const saveWorkoutResult = async () => {
       sets: parseInt(workoutResult.value.sets),
       reps: parseInt(workoutResult.value.reps),
       weight: parseFloat(workoutResult.value.weight) || 0,
+      duration: workoutResult.value.duration ? parseInt(workoutResult.value.duration) : null,
       notes: workoutResult.value.notes || ''
     };
     
@@ -479,6 +481,7 @@ const saveWorkoutResult = async () => {
       sets: 1,
       reps: 10,
       weight: 0,
+      duration: null,
       notes: ''
     };
     
@@ -1182,6 +1185,20 @@ const logout = () => {
                 min="0"
                 step="0.5"
                 suffix="lbs"
+              ></v-text-field>
+            </v-col>
+          </v-row>
+          
+          <v-row>
+            <v-col cols="12">
+              <v-text-field
+                v-model.number="workoutResult.duration"
+                label="Time (seconds)"
+                type="number"
+                min="0"
+                hint="Optional - for timed exercises like running, swimming, or batting practice"
+                persistent-hint
+                suffix="seconds"
               ></v-text-field>
             </v-col>
           </v-row>
