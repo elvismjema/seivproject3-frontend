@@ -952,4 +952,3 @@ const activePlanProgress = computed(() => {
       </v-row>
     </v-container>
   </v-container>
-</template>
