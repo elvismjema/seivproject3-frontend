@@ -195,6 +195,14 @@
           <v-card-title>End Workout?</v-card-title>
           <v-card-text>
             Are you sure you want to end this workout session?
+            <v-list class="mt-4 mb-4">
+              <v-list-item>
+                <v-list-item-title>Duration: {{ formatTime(elapsedTime) }}</v-list-item-title>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Exercises Completed: {{ exercises.filter(e => e.completed).length }} / {{ exercises.length }}</v-list-item-title>
+              </v-list-item>
+            </v-list>
             <v-textarea
               v-model="workoutNotes"
               label="Workout Notes"
