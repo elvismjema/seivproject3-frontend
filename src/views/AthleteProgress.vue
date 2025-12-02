@@ -735,7 +735,8 @@ const activePlanProgress = computed(() => {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
 }
 </style>
-  <v-container fluid class="pa-0">
+
+<v-container fluid class="pa-0">
     <v-app-bar color="#800020" elevation="0" class="text-white">
       <v-btn icon @click="goBack" class="text-white">
         <v-icon color="white">mdi-arrow-left</v-icon>
