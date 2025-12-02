@@ -54,12 +54,41 @@ const AdminServices = {
     );
   },
 
+  // Coach Management
+  getCoachAthletes: async (coachId) => {
+    return axios.get(
+      `${BASE_URL}/admin/coaches/${coachId}/athletes`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  removeAthleteFromCoach: async (coachId, athleteId) => {
+    return axios.delete(
+      `${BASE_URL}/admin/coaches/${coachId}/athletes/${athleteId}`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
   // User Management (existing functionality)
   getAllUsers: async () => {
-    return axios.get(
+    const response = await axios.get(
       `${BASE_URL}/users/admin/all-users`,
       { headers: getAuthHeaders() }
     );
+    
+    // Add athleteCount to each coach
+    if (response.data) {
+      const coaches = response.data.filter(user => user.role === 'coach');
+      for (const coach of coaches) {
+        const athletesResponse = await axios.get(
+          `${BASE_URL}/admin/coaches/${coach.id}/athletes`,
+          { headers: getAuthHeaders() }
+        );
+        coach.athleteCount = athletesResponse.data?.length || 0;
+      }
+    }
+    
+    return response;
   },
 
   updateUserRole: async (userId, role) => {

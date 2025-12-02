@@ -65,6 +65,11 @@ const router = createRouter({
       component: () => import("./views/AdminCoachList.vue"),
     },
     {
+      path: "/admin/coaches/:coachId/athletes",
+      name: "admin-coach-athletes",
+      component: () => import("./views/AdminCoachAthletes.vue"),
+    },
+    {
       path: "/admin-athletes",
       name: "admin-athletes",
       component: () => import("./views/AdminAthleteList.vue"),
