@@ -122,9 +122,8 @@ const goBack = () => {
       <v-row class="mt-5">
         <v-col cols="12">
           <v-card>
-            <v-card-title>
-              <h2>User Management</h2>
-              <v-spacer></v-spacer>
+            <v-card-title class="d-flex justify-space-between align-center">
+              <h2 class="text-h5 font-weight-bold">User Management</h2>
               <v-text-field
                 v-model="search"
                 append-icon="mdi-magnify"
@@ -133,6 +132,7 @@ const goBack = () => {
                 hide-details
                 density="compact"
                 style="max-width: 300px"
+                class="ml-4"
               ></v-text-field>
             </v-card-title>
 
