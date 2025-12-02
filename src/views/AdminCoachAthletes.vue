@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Utils from '../config/utils.js';
 import AdminServices from '../services/adminServices.js';
@@ -10,9 +10,16 @@ const router = useRouter();
 const user = ref({});
 const coach = ref(null);
 const athletes = ref([]);
+const availableAthletes = ref([]);
 const loading = ref(true);
+const loadingAthletes = ref(false);
 const error = ref('');
 const success = ref('');
+const showAddAthleteDialog = ref(false);
+const selectedAthleteId = ref('');
+
+// Computed property to check if we have available athletes to add
+const hasAvailableAthletes = computed(() => availableAthletes.value.length > 0);
 
 onMounted(async () => {
   user.value = Utils.getStore("user");
@@ -20,7 +27,8 @@ onMounted(async () => {
     router.push({ name: 'login' });
     return;
   }
-  await fetchCoachAndAthletes();
+  await fetchCoachAndAthletes();  
+  await fetchAvailableAthletes();
 });
 
 const fetchCoachAndAthletes = async () => {
@@ -37,13 +45,56 @@ const fetchCoachAndAthletes = async () => {
     }
     
     // Get coach's athletes
-    const response = await AdminServices.getCoachAthletes(coachId);
-    athletes.value = response.data || [];
+    athletes.value = await AdminServices.getCoachAthletes(coachId);
   } catch (err) {
     console.error('Error fetching coach athletes:', err);
     error.value = 'Failed to load coach athletes. Please try again.';
+    setTimeout(() => { error.value = ''; }, 5000);
   } finally {
     loading.value = false;
+  }
+};
+
+const fetchAvailableAthletes = async () => {
+  if (!coach.value) return;
+  
+  loadingAthletes.value = true;
+  try {
+    availableAthletes.value = await AdminServices.getAvailableAthletesForCoach(coach.value.id);
+  } catch (err) {
+    console.error('Error fetching available athletes:', err);
+    error.value = 'Failed to load available athletes. Please try again.';
+    setTimeout(() => { error.value = ''; }, 5000);
+  } finally {
+    loadingAthletes.value = false;
+  }
+};
+
+const openAddAthleteDialog = async () => {
+  await fetchAvailableAthletes();
+  showAddAthleteDialog.value = true;
+};
+
+const addAthlete = async () => {
+  if (!selectedAthleteId.value) return;
+  
+  try {
+    await AdminServices.assignAthleteToCoach(coach.value.id, selectedAthleteId.value);
+    
+    // Refresh both lists
+    await Promise.all([
+      fetchCoachAndAthletes(),
+      fetchAvailableAthletes()
+    ]);
+    
+    success.value = 'Athlete added successfully';
+    selectedAthleteId.value = '';
+    showAddAthleteDialog.value = false;
+    setTimeout(() => { success.value = ''; }, 3000);
+  } catch (err) {
+    console.error('Error adding athlete:', err);
+    error.value = 'Failed to add athlete. Please try again.';
+    setTimeout(() => { error.value = ''; }, 5000);
   }
 };
 
@@ -54,14 +105,18 @@ const removeAthlete = async (athleteId) => {
   
   try {
     await AdminServices.removeAthleteFromCoach(coach.value.id, athleteId);
-    // Remove the athlete from the local list
-    athletes.value = athletes.value.filter(a => a.id !== athleteId);
+    // Refresh both lists
+    await Promise.all([
+      fetchCoachAndAthletes(),
+      fetchAvailableAthletes()
+    ]);
+    
     success.value = 'Athlete removed successfully';
     setTimeout(() => { success.value = ''; }, 3000);
   } catch (err) {
     console.error('Error removing athlete:', err);
     error.value = 'Failed to remove athlete. Please try again.';
-    setTimeout(() => { error.value = ''; }, 3000);
+    setTimeout(() => { error.value = ''; }, 5000);
   }
 };
 
@@ -107,7 +162,18 @@ const logout = () => {
                 color="#800020"
                 variant="outlined"
                 prepend-icon="mdi-account-multiple-plus"
-                @click="$router.push({ name: 'admin-coaches' })"
+                @click="openAddAthleteDialog"
+                :loading="loadingAthletes"
+                :disabled="!hasAvailableAthletes"
+                class="mr-2"
+              >
+                Add Athlete
+              </v-btn>
+              <v-btn
+                color="#800020"
+                variant="outlined"
+                prepend-icon="mdi-arrow-left"
+                @click="goBack"
               >
                 Back to Coaches
               </v-btn>
@@ -136,7 +202,7 @@ const logout = () => {
                 {{ error }}
               </v-alert>
 
-              <v-table v-if="!loading && athletes.length > 0">
+              <v-table v-if="!loading" class="elevation-1">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -145,6 +211,16 @@ const logout = () => {
                   </tr>
                 </thead>
                 <tbody>
+                  <tr v-if="athletes.length === 0">
+                    <td colspan="3" class="text-center py-4">
+                      <div v-if="!hasAvailableAthletes" class="text-subtitle-1">
+                        No athletes available to assign. All athletes are already assigned to this coach.
+                      </div>
+                      <div v-else class="text-subtitle-1">
+                        No athletes assigned yet. Click "Add Athlete" to get started.
+                      </div>
+                    </td>
+                  </tr>
                   <tr v-for="athlete in athletes" :key="athlete.id">
                     <td>{{ athlete.fName }} {{ athlete.lName }}</td>
                     <td>{{ athlete.email }}</td>
@@ -155,8 +231,8 @@ const logout = () => {
                         variant="outlined"
                         @click="removeAthlete(athlete.id)"
                         :loading="loading"
+                        prepend-icon="mdi-account-remove"
                       >
-                        <v-icon size="small" class="mr-1">mdi-account-remove</v-icon>
                         Remove
                       </v-btn>
                     </td>
@@ -164,16 +240,49 @@ const logout = () => {
                 </tbody>
               </v-table>
 
-              <v-alert v-else-if="!loading" type="info">
-                No athletes found for this coach.
-              </v-alert>
-
               <v-progress-linear v-else indeterminate color="#800020"></v-progress-linear>
             </v-card-text>
           </v-card>
         </v-col>
       </v-row>
     </v-container>
+
+    <!-- Add Athlete Dialog -->
+    <v-dialog v-model="showAddAthleteDialog" max-width="600px">
+      <v-card>
+        <v-card-title>Add Athlete to Coach</v-card-title>
+        <v-card-text>
+          <v-select
+            v-model="selectedAthleteId"
+            :items="availableAthletes"
+            item-title="name"
+            item-value="id"
+            label="Select Athlete"
+            :loading="loadingAthletes"
+            :disabled="loadingAthletes"
+            :hint="availableAthletes.length === 0 ? 'No athletes available to add' : ''"
+            persistent-hint
+            class="mt-4"
+          >
+            <template v-slot:item="{ item, props }">
+              <v-list-item v-bind="props" :title="item.raw.name" :subtitle="item.raw.email"></v-list-item>
+            </template>
+          </v-select>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn color="grey" @click="showAddAthleteDialog = false">Cancel</v-btn>
+          <v-btn 
+            color="#800020" 
+            @click="addAthlete" 
+            :disabled="!selectedAthleteId || loading"
+            :loading="loading"
+          >
+            Add Athlete
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 

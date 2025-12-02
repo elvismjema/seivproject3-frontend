@@ -56,17 +56,72 @@ const AdminServices = {
 
   // Coach Management
   getCoachAthletes: async (coachId) => {
-    return axios.get(
-      `${BASE_URL}/admin/coaches/${coachId}/athletes`,
-      { headers: getAuthHeaders() }
-    );
+    try {
+      const response = await axios.get(
+        `${BASE_URL}/admin/coaches/${coachId}/athletes`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data || [];
+    } catch (error) {
+      console.error('Error fetching coach athletes:', error);
+      throw error;
+    }
   },
 
   removeAthleteFromCoach: async (coachId, athleteId) => {
-    return axios.delete(
-      `${BASE_URL}/admin/coaches/${coachId}/athletes/${athleteId}`,
-      { headers: getAuthHeaders() }
-    );
+    try {
+      const response = await axios.delete(
+        `${BASE_URL}/admin/coaches/${coachId}/athletes/${athleteId}`,
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error removing athlete from coach:', error);
+      throw error;
+    }
+  },
+
+  assignAthleteToCoach: async (coachId, athleteId) => {
+    try {
+      const response = await axios.post(
+        `${BASE_URL}/admin/coaches/${coachId}/athletes/${athleteId}`,
+        {},
+        { headers: getAuthHeaders() }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error assigning athlete to coach:', error);
+      throw error;
+    }
+  },
+
+  getAvailableAthletesForCoach: async (coachId) => {
+    try {
+      // First get all athletes
+      const allAthletes = await axios.get(
+        `${BASE_URL}/users/admin/all-users`,
+        { headers: getAuthHeaders() }
+      );
+      
+      // Then get athletes already assigned to this coach
+      const assignedAthletes = await axios.get(
+        `${BASE_URL}/admin/coaches/${coachId}/athletes`,
+        { headers: getAuthHeaders() }
+      );
+      
+      // Filter out athletes already assigned to this coach
+      const assignedAthleteIds = new Set(assignedAthletes.data.map(a => a.id));
+      return allAthletes.data
+        .filter(user => user.role === 'athlete' && !assignedAthleteIds.has(user.id))
+        .map(athlete => ({
+          id: athlete.id,
+          name: `${athlete.fName} ${athlete.lName}`,
+          email: athlete.email
+        }));
+    } catch (error) {
+      console.error('Error fetching available athletes:', error);
+      throw error;
+    }
   },
 
   // User Management (existing functionality)
