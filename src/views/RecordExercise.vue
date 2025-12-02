@@ -22,16 +22,16 @@
                 <v-select
                   v-model="exerciseData.exerciseId"
                   :items="availableExercises"
-                  item-title="name"
-                  item-value="id"
                   label="Select Exercise"
                   required
                   :rules="[v => !!v || 'Exercise is required']"
+                  :item-text="(exercise) => `${exercise.name} (${exercise.category})`"
+                  item-value="id"
                 ></v-select>
 
                 <!-- Date and Time -->
                 <v-row>
-                  <v-col cols="12" md="6">
+                  <v-col cols="12" md="4">
                     <v-text-field
                       v-model="exerciseData.date"
                       label="Date"
@@ -40,7 +40,7 @@
                       :rules="[v => !!v || 'Date is required']"
                     ></v-text-field>
                   </v-col>
-                  <v-col cols="12" md="6">
+                  <v-col cols="12" md="4">
                     <v-text-field
                       v-model="exerciseData.time"
                       label="Time"
@@ -48,6 +48,16 @@
                       required
                       :rules="[v => !!v || 'Time is required']"
                     ></v-text-field>
+                  </v-col>
+                  <v-col cols="12" md="4">
+                    <v-select
+                      v-model="exerciseData.duration"
+                      :items="durationOptions"
+                      label="Exercise Duration (Optional)"
+                      clearable
+                      hint="How long did this exercise take?"
+                      persistent-hint
+                    ></v-select>
                   </v-col>
                 </v-row>
 
@@ -177,12 +187,29 @@ const form = ref(null);
 const isSubmitting = ref(false);
 const availableExercises = ref([]);
 
+// Duration options (10-minute intervals up to 2 hours)
+const durationOptions = [
+  { title: '10 minutes', value: 10 },
+  { title: '20 minutes', value: 20 },
+  { title: '30 minutes', value: 30 },
+  { title: '40 minutes', value: 40 },
+  { title: '50 minutes', value: 50 },
+  { title: '60 minutes (1 hour)', value: 60 },
+  { title: '70 minutes', value: 70 },
+  { title: '80 minutes', value: 80 },
+  { title: '90 minutes (1.5 hours)', value: 90 },
+  { title: '100 minutes', value: 100 },
+  { title: '110 minutes', value: 110 },
+  { title: '120 minutes (2 hours)', value: 120 }
+];
+
 // Initialize with current date and time
 const now = new Date();
 const exerciseData = ref({
   exerciseId: null,
   date: now.toISOString().split('T')[0],
   time: now.toTimeString().split(':').slice(0, 2).join(':'),
+  duration: null,
   sets: [],
   notes: ''
 });
@@ -240,14 +267,16 @@ const submitExercise = async () => {
       exerciseId: exerciseData.value.exerciseId,
       performedAt: dateTime.toISOString(),
       sets: exerciseData.value.sets,
-      notes: exerciseData.value.notes
+      notes: exerciseData.value.notes,
+      duration: exerciseData.value.duration
     });
     
     const response = await AthleteServices.recordExercise({
       exerciseId: exerciseData.value.exerciseId,
       performedAt: dateTime.toISOString(),
       sets: exerciseData.value.sets,
-      notes: exerciseData.value.notes
+      notes: exerciseData.value.notes,
+      duration: exerciseData.value.duration
     });
     
     console.log('Exercise saved successfully:', response);

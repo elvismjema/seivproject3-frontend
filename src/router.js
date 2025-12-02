@@ -20,6 +20,9 @@ import UserManagement from "./views/UserManagement.vue";
 // Exercise imports
 import ExerciseManagement from "./views/ExerciseManagement.vue";
 
+// Coach imports
+import ManagePlans from "./views/ManagePlans.vue";
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -66,17 +69,33 @@ const router = createRouter({
       name: "admin-athletes",
       component: () => import("./views/AdminAthleteList.vue"),
     },
+    {
+      path: "/admin-plan-management",
+      name: "admin-plan-management",
+      component: () => import("./views/AdminPlanManagement.vue"),
+    },
     // Exercise routes
     {
       path: "/exercise-management",
       name: "exercise-management",
       component: ExerciseManagement,
     },
+    // Coach routes
+    {
+      path: "/manage-plans",
+      name: "manage-plans",
+      component: ManagePlans,
+    },
     // Athlete routes
     {
       path: "/athlete-progress",
       name: "athlete-progress",
       component: AthleteProgress,
+    },
+    {
+      path: "/coach/athlete-progress/:id",
+      name: "coach-athlete-progress",
+      component: () => import("./views/CoachAthleteProgress.vue"),
     },
     {
       path: "/record-workout",

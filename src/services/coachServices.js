@@ -68,6 +68,23 @@ const CoachServices = {
     );
   },
 
+  // Update training plan
+  updatePlan: async (planId, planData) => {
+    return axios.put(
+      `${BASE_URL}/coach/plans/${planId}`,
+      planData,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Delete training plan
+  deletePlan: async (planId) => {
+    return axios.delete(
+      `${BASE_URL}/coach/plans/${planId}`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
   // Assign plan to athlete
   assignPlan: async (assignmentData) => {
     return axios.post(
@@ -77,11 +94,36 @@ const CoachServices = {
     );
   },
 
+  // Unassign plan from athlete
+  unassignPlan: async (unassignmentData) => {
+    return axios.post(
+      `${BASE_URL}/coach/plans/unassign`,
+      unassignmentData,
+      { headers: getAuthHeaders() }
+    );
+  },
+
   // Create goal for athlete
   createGoal: async (goalData) => {
     return axios.post(
       `${BASE_URL}/coach/goals`,
       goalData,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Get coach's goals
+  getCoachGoals: async () => {
+    return axios.get(
+      `${BASE_URL}/coach/goals`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Delete goal
+  deleteGoal: async (goalId) => {
+    return axios.delete(
+      `${BASE_URL}/coach/goals/${goalId}`,
       { headers: getAuthHeaders() }
     );
   },
@@ -148,6 +190,15 @@ const CoachServices = {
   getWeeklyResultsCount: async () => {
     return axios.get(
       `${BASE_URL}/coach/results/weekly/count`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Record workout result for athlete
+  recordWorkoutResult: async (resultData) => {
+    return axios.post(
+      `${BASE_URL}/coach/results`,
+      resultData,
       { headers: getAuthHeaders() }
     );
   }
