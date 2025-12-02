@@ -550,13 +550,23 @@ const confirmEndWorkout = () => {
 };
 
 const endWorkout = async () => {
+  console.log('endWorkout called');
   showEndWorkoutDialog.value = false; // Close the dialog first
+  
   try {
-    await AthleteServices.completeWorkout({
+    console.log('Preparing workout data:', {
+      duration: elapsedTime.value,
+      exerciseCount: exercises.value.length,
+      hasNotes: !!workoutNotes.value
+    });
+    
+    const response = await AthleteServices.completeWorkout({
       duration: elapsedTime.value,
       exercises: exercises.value,
       notes: workoutNotes.value
     });
+    
+    console.log('Workout completion response:', response);
     
     // Stop the timer
     stopTimer();
@@ -569,15 +579,25 @@ const endWorkout = async () => {
       name: 'athlete-dashboard'
     });
   } catch (error) {
-    console.error('Error completing workout:', error);
-    // Show error message to user
-    alert('Failed to complete workout. Please try again.');
+    console.error('Error completing workout:', {
+      error: error,
+      response: error.response?.data,
+      status: error.response?.status,
+      statusText: error.response?.statusText
+    });
+    
+    // Show detailed error message to user
+    const errorMessage = error.response?.data?.message || 'Failed to complete workout. Please try again.';
+    alert(`Error: ${errorMessage}`);
+    
     // Reopen the dialog to let user try again
     showEndWorkoutDialog.value = true;
+  } finally {
+    // Reset workout state only if there was no error
+    if (!showEndWorkoutDialog.value) {
+      workoutStarted.value = false;
+    }
   }
-  
-  // Reset workout state
-  workoutStarted.value = false;
 };
 
 // Lifecycle hooks
