@@ -554,19 +554,25 @@ const endWorkout = async () => {
   showEndWorkoutDialog.value = false; // Close the dialog first
   
   try {
-    console.log('Preparing workout data:', {
+    const workoutData = {
       duration: elapsedTime.value,
-      exerciseCount: exercises.value.length,
-      hasNotes: !!workoutNotes.value
-    });
-    
-    const response = await AthleteServices.completeWorkout({
-      duration: elapsedTime.value,
-      exercises: exercises.value,
+      exercises: exercises.value.map(ex => ({
+        exerciseId: ex.id || ex.exerciseId,
+        name: ex.name,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight,
+        completed: ex.completed,
+        setsDone: ex.setsDone || 0
+      })),
       notes: workoutNotes.value
-    });
+    };
+
+    console.log('Sending workout data to server:', JSON.stringify(workoutData, null, 2));
     
-    console.log('Workout completion response:', response);
+    const response = await AthleteServices.completeWorkout(workoutData);
+    
+    console.log('Workout completion successful, response:', response);
     
     // Stop the timer
     stopTimer();
