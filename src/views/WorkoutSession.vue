@@ -398,6 +398,7 @@ const totalPausedTime = ref(0);
 const showAddExerciseDialog = ref(false);
 const showRecordSetDialog = ref(false);
 const showEndWorkoutDialog = ref(false);
+const workoutNotes = ref('');
 
 // Form models
 const newExercise = ref({
@@ -549,6 +550,7 @@ const confirmEndWorkout = () => {
 };
 
 const endWorkout = async () => {
+  showEndWorkoutDialog.value = false; // Close the dialog first
   try {
     await AthleteServices.completeWorkout({
       duration: elapsedTime.value,
@@ -556,16 +558,26 @@ const endWorkout = async () => {
       notes: workoutNotes.value
     });
     
+    // Stop the timer
+    stopTimer();
+    
+    // Show success message
+    alert('Workout completed successfully!');
+    
+    // Navigate to dashboard
     router.push({ 
-      name: 'athlete-dashboard',
-      params: { 
-        message: 'Workout completed successfully!' 
-      }
+      name: 'athlete-dashboard'
     });
   } catch (error) {
     console.error('Error completing workout:', error);
-    // Show error message
+    // Show error message to user
+    alert('Failed to complete workout. Please try again.');
+    // Reopen the dialog to let user try again
+    showEndWorkoutDialog.value = true;
   }
+  
+  // Reset workout state
+  workoutStarted.value = false;
 };
 
 // Lifecycle hooks
