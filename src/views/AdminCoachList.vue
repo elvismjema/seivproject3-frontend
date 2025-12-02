@@ -171,7 +171,8 @@ const logout = () => {
                         size="small"
                         color="#800020"
                         variant="text"
-                        @click="viewCoachAthletes(coach)"
+                        :to="{ name: 'admin-coach-athletes', params: { coachId: coach.id } }"
+                        class="text-none"
                       >
                         <v-icon size="small" left>mdi-account-details</v-icon>
                         Manage Athletes
