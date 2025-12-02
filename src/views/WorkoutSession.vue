@@ -398,6 +398,7 @@ const totalPausedTime = ref(0);
 const showAddExerciseDialog = ref(false);
 const showRecordSetDialog = ref(false);
 const showEndWorkoutDialog = ref(false);
+const workoutNotes = ref('');
 
 // Form models
 const newExercise = ref({
@@ -549,22 +550,56 @@ const confirmEndWorkout = () => {
 };
 
 const endWorkout = async () => {
+  console.log('endWorkout function called');
+  showEndWorkoutDialog.value = false; // Close the dialog
+  
   try {
-    await AthleteServices.completeWorkout({
+    // Prepare the workout data
+    const workoutData = {
       duration: elapsedTime.value,
-      exercises: exercises.value,
+      exercises: exercises.value.map(ex => ({
+        exerciseId: ex.id || ex.exerciseId,
+        name: ex.name,
+        sets: ex.sets,
+        reps: ex.reps,
+        weight: ex.weight,
+        completed: ex.completed,
+        setsDone: ex.setsDone || 0
+      })),
       notes: workoutNotes.value
-    });
+    };
+
+    console.log('Sending workout data to server:', JSON.stringify(workoutData, null, 2));
     
+    // Call the API
+    const response = await AthleteServices.completeWorkout(workoutData);
+    console.log('Workout saved successfully:', response);
+    
+    // Stop the timer
+    stopTimer();
+    
+    // Navigate to dashboard with success message
     router.push({ 
       name: 'athlete-dashboard',
-      params: { 
-        message: 'Workout completed successfully!' 
+      query: { 
+        message: 'Workout completed successfully!',
+        status: 'success'
       }
     });
+    
   } catch (error) {
-    console.error('Error completing workout:', error);
-    // Show error message
+    console.error('Error completing workout:', {
+      error: error,
+      response: error.response?.data,
+      status: error.response?.status,
+      statusText: error.response?.statusText
+    });
+    
+    // Show error to user
+    alert(`Error saving workout: ${error.response?.data?.message || error.message}`);
+    
+    // Reopen the dialog to let user try again
+    showEndWorkoutDialog.value = true;
   }
 };
 
