@@ -415,7 +415,6 @@ const currentSet = ref({
   notes: ''
 });
 
-const workoutNotes = ref('');
 const currentExercise = ref(null);
 
 // Timer functions
