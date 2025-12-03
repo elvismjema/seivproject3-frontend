@@ -27,8 +27,9 @@ const fetchCoachAndAthletes = async () => {
   loading.value = true;
   error.value = '';
   try {
-    // Get coach details
     const coachId = route.params.coachId;
+    
+    // Get coach details
     const usersResponse = await AdminServices.getAllUsers();
     coach.value = usersResponse.data.find(u => u.id === coachId && u.role === 'coach');
     
@@ -36,9 +37,13 @@ const fetchCoachAndAthletes = async () => {
       throw new Error('Coach not found');
     }
     
-    // Get coach's athletes
+    // Get coach's athletes - the response is already in the correct format
     const response = await AdminServices.getCoachAthletes(coachId);
-    athletes.value = response.data || [];
+    // Handle both response formats for backward compatibility
+    athletes.value = (response.data?.data || response.data || []).map(athlete => ({
+      ...athlete,
+      name: athlete.name || `${athlete.fName || ''} ${athlete.lName || ''}`.trim()
+    }));
   } catch (err) {
     console.error('Error fetching coach athletes:', err);
     error.value = 'Failed to load coach athletes. Please try again.';

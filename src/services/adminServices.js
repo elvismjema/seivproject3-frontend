@@ -59,7 +59,47 @@ const AdminServices = {
     return axios.get(
       `${BASE_URL}/admin/coaches/${coachId}/athletes`,
       { headers: getAuthHeaders() }
-    );
+    ).then(response => {
+      // Ensure the response has the expected structure
+      if (response.data && response.data.data) {
+        return response;
+      }
+      return { 
+        ...response, 
+        data: { data: response.data } 
+      };
+    });
+  },
+
+  // Get all coaches with their athlete counts
+  getCoachesWithAthleteCounts: async () => {
+    try {
+      // First get all users
+      const response = await axios.get(
+        `${BASE_URL}/users/admin/all-users`,
+        { headers: getAuthHeaders() }
+      );
+      
+      if (!response.data) return [];
+      
+      // Filter coaches
+      const coaches = response.data.filter(user => user.role === 'coach');
+      
+      // Get athlete counts for all coaches
+      const countsResponse = await axios.get(
+        `${BASE_URL}/admin/coaches/athlete-counts`,
+        { headers: getAuthHeaders() }
+      );
+      
+      // Map athlete counts to coaches
+      return coaches.map(coach => ({
+        ...coach,
+        athleteCount: countsResponse.data[coach.id] || 0
+      }));
+    } catch (error) {
+      console.error('Error fetching coaches with athlete counts:', error);
+      throw error;
+    }
   },
 
   removeAthleteFromCoach: async (coachId, athleteId) => {
