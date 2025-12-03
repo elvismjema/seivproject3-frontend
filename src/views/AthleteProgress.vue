@@ -258,22 +258,32 @@
             </v-card-title>
             <v-card-text>
               <v-progress-linear v-if="loading" indeterminate color="#800020"></v-progress-linear>
-              <v-list v-else-if="recentWorkouts.length > 0" class="pa-0">
+              <v-list v-else class="pa-0">
                 <v-list-item
-                  v-for="workout in recentWorkouts"
-                  :key="workout.id"
-                  class="px-0"
+                  v-for="(workout, index) in recentWorkouts"
+                  :key="workout.id || index"
+                  class="px-4 py-2"
+                  :class="{ 'bg-grey-lighten-4': index % 2 === 0 }"
                 >
+                  <template v-slot:prepend>
+                    <v-avatar color="#800020" size="40" class="mr-3">
+                      <v-icon color="white" size="small">mdi-dumbbell</v-icon>
+                    </v-avatar>
+                  </template>
                   <v-list-item-title class="font-weight-medium">
-                    {{ workout.exercise?.name || 'Workout' }}
+                    {{ getWorkoutName(workout) }}
                   </v-list-item-title>
-                  <v-list-item-subtitle class="d-flex align-center">
-                    <v-icon size="small" class="mr-1" color="#800020">mdi-calendar</v-icon>
-                    {{ formatDate(workout.performedDate) }}
-                    <v-icon size="small" class="ml-2 mr-1" color="#800020">mdi-dumbbell</v-icon>
-                    {{ workout.sets }} sets × {{ workout.reps }} reps
-                    <span v-if="workout.weight" class="ml-2">
-                      <v-icon size="small" class="mr-1" color="#800020">mdi-weight</v-icon>
+                  <v-list-item-subtitle class="d-flex align-center flex-wrap mt-1">
+                    <span class="d-flex align-center mr-3">
+                      <v-icon size="small" color="#800020" class="mr-1">mdi-calendar</v-icon>
+                      {{ formatDateTime(workout?.performedDate) }}
+                    </span>
+                    <span v-if="workout?.sets && workout?.reps" class="d-flex align-center mr-3">
+                      <v-icon size="small" color="#800020" class="mr-1">mdi-reload</v-icon>
+                      {{ workout.sets }} sets × {{ workout.reps }} reps
+                    </span>
+                    <span v-if="workout?.weight" class="d-flex align-center">
+                      <v-icon size="small" color="#800020" class="mr-1">mdi-weight</v-icon>
                       {{ workout.weight }} lbs
                     </span>
                   </v-list-item-subtitle>
@@ -331,9 +341,28 @@ const maxWorkoutsPerWeek = ref(0);
 
 // Computed properties
 const recentWorkouts = computed(() => {
-  return workoutHistory.value
-    .sort((a, b) => new Date(b.performedDate) - new Date(a.performedDate))
-    .slice(0, 10);
+  try {
+    if (!Array.isArray(workoutHistory.value)) {
+      console.warn('workoutHistory is not an array:', workoutHistory.value);
+      return [];
+    }
+    
+    return [...workoutHistory.value]
+      .sort((a, b) => {
+        try {
+          const dateA = a?.performedDate ? new Date(a.performedDate) : new Date(0);
+          const dateB = b?.performedDate ? new Date(b.performedDate) : new Date(0);
+          return dateB - dateA;
+        } catch (e) {
+          console.error('Error sorting workouts:', e);
+          return 0;
+        }
+      })
+      .slice(0, 10);
+  } catch (e) {
+    console.error('Error in recentWorkouts computed property:', e);
+    return [];
+  }
 });
 
 const completedGoalsCount = computed(() => {
@@ -382,15 +411,30 @@ const formatDate = (dateString) => {
 };
 
 const formatDateTime = (dateString) => {
-  if (!dateString) return '';
-  const options = { 
-    month: 'short', 
-    day: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: true
-  };
-  return new Date(dateString).toLocaleString('en-US', options);
+  if (!dateString) return 'No date';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid date';
+    
+    const options = { 
+      month: 'short', 
+      day: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true
+    };
+    return date.toLocaleString('en-US', options);
+  } catch (e) {
+    console.error('Error formatting date:', e);
+    return 'Invalid date';
+  }
+};
+
+const getWorkoutName = (workout) => {
+  if (!workout) return 'Workout';
+  if (workout.exercise && workout.exercise.name) return workout.exercise.name;
+  if (workout.exerciseName) return workout.exerciseName;
+  return 'Workout';
 };
 
 const getWeekRange = (dateString) => {
