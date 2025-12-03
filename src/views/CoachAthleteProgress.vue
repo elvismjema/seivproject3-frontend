@@ -394,15 +394,13 @@ onMounted(async () => {
                           <span class="mr-2">• {{ workout.distance }} mi</span>
                         </template>
                       </v-list-item-subtitle>
-                      <v-list-item-subtitle v-if="workout.notes" class="text-caption text-grey mt-1">
-                        <v-icon x-small>mdi-note-text</v-icon> {{ workout.notes }}
+                      <v-list-item-subtitle v-if="workout.notes" class="mt-1">
+                        <v-chip size="small" variant="tonal" class="text-caption">
+                          <v-icon size="small" left>mdi-note-text</v-icon>
+                          {{ workout.notes }}
+                        </v-chip>
                       </v-list-item-subtitle>
                     </v-list-item-content>
-                      <v-chip size="small" variant="tonal">
-                        <v-icon size="small" left>mdi-note-text</v-icon>
-                        {{ workout.notes }}
-                      </v-chip>
-                    </v-list-item-subtitle>
                   </v-list-item>
                 </v-list>
                 <v-alert v-else color="grey-lighten-3" variant="flat">
