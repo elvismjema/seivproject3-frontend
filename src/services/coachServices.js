@@ -1,7 +1,12 @@
 import axios from "axios";
 import Utils from "../config/utils.js";
 
-const BASE_URL = (import.meta.env.VITE_APP_BASE_URL || "http://localhost:3122") + "/tracker-t2";
+var BASE_URL = "";
+if (import.meta.env.DEV) {
+  BASE_URL = "http://localhost:3122/tracker-t2";
+} else {
+  BASE_URL = (import.meta.env.VITE_APP_BASE_URL || "https://project2.eaglesoftwareteam.com") + "/tracker-t2";
+}
 
 // Helper to get auth headers
 const getAuthHeaders = () => {
