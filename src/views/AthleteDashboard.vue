@@ -195,7 +195,7 @@ const isDeadlineApproaching = (deadline) => {
           </v-card-text>
         </v-card>
 
-        <v-card>
+        <v-card @click="$router.push({ name: 'my-goals' })" style="cursor: pointer">
           <v-card-title class="d-flex align-center">
             <v-icon color="#800020" class="mr-2">mdi-bullseye-arrow</v-icon>
             Active Goals
@@ -247,6 +247,17 @@ const isDeadlineApproaching = (deadline) => {
               No active goals. Talk to your coach about setting some!
             </v-alert>
           </v-card-text>
+          <v-card-actions v-if="filteredGoals.length > 0">
+            <v-btn 
+              color="#800020" 
+              variant="text" 
+              @click="$router.push({ name: 'my-goals' })"
+              block
+            >
+              View All Goals
+              <v-icon right>mdi-arrow-right</v-icon>
+            </v-btn>
+          </v-card-actions>
         </v-card>
 
         <v-card class="mt-3" v-if="completedGoals.length > 0">
