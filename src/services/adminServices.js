@@ -183,6 +183,46 @@ const AdminServices = {
       `${BASE_URL}/exercises`,
       { headers: getAuthHeaders() }
     );
+  },
+
+  // Get assigned plans for a specific athlete (admin version)
+  getAssignedPlans: async (athleteId) => {
+    return axios.get(
+      `${BASE_URL}/admin/athletes/${athleteId}/plans`,
+      { headers: getAuthHeaders() }
+    );
+  },
+  
+  // Get athlete progress (admin version)
+  getAthleteProgress: async (athleteId) => {
+    return axios.get(
+      `${BASE_URL}/admin/athletes/${athleteId}/progress`,
+      { headers: getAuthHeaders() }
+    );
+  },
+  
+  // Get athlete goals (admin version)
+  getAthleteGoals: async (athleteId) => {
+    return axios.get(
+      `${BASE_URL}/admin/athletes/${athleteId}/goals`,
+      { headers: getAuthHeaders() }
+    );
+  },
+  
+  // Get weekly stats (admin version)
+  getWeeklyStats: async (athleteId) => {
+    return axios.get(
+      `${BASE_URL}/admin/athletes/${athleteId}/weekly-stats`,
+      { headers: getAuthHeaders() }
+    );
+  },
+
+  // Remove a plan from an athlete
+  removeAthletePlan: async (athleteId, planId) => {
+    return axios.delete(
+      `${BASE_URL}/admin/athletes/${athleteId}/plans/${planId}`,
+      { headers: getAuthHeaders() }
+    );
   }
 };
 
