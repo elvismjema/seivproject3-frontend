@@ -183,7 +183,6 @@ const logout = () => {
                   <tr>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Coaches</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -191,24 +190,6 @@ const logout = () => {
                   <tr v-for="athlete in filteredAthletes" :key="athlete.id">
                     <td>{{ athlete.fName }} {{ athlete.lName }}</td>
                     <td>{{ athlete.email }}</td>
-                    <td>
-                      <div v-if="athlete.coaches && athlete.coaches.length > 0">
-                        <v-chip 
-                          v-for="coach in athlete.coaches" 
-                          :key="coach.id"
-                          color="#800020" 
-                          text-color="white" 
-                          size="small"
-                          class="mr-1 mb-1"
-                        >
-                          <v-icon left size="small">mdi-account-tie</v-icon>
-                          {{ coach.fName }} {{ coach.lName }}
-                        </v-chip>
-                      </div>
-                      <v-chip v-else color="grey" text-color="white" size="small">
-                        No Coaches
-                      </v-chip>
-                    </td>
                     <td>
                       <v-tooltip text="View Coaches" location="bottom">
                         <template v-slot:activator="{ props: tooltipProps }">
