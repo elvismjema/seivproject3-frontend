@@ -77,16 +77,8 @@ const formatDate = (dateString) => {
       <v-row class="mt-5">
         <v-col cols="12">
           <v-card>
-            <v-card-title class="d-flex align-center">
+            <v-card-title>
               <h2>Coaches for {{ athlete.fName }} {{ athlete.lName }}</h2>
-              <v-spacer></v-spacer>
-              <v-btn 
-                color="primary" 
-                @click="goBack"
-                prepend-icon="mdi-arrow-left"
-              >
-                Back to Athletes
-              </v-btn>
             </v-card-title>
 
             <v-card-text>
