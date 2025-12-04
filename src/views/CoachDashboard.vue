@@ -95,18 +95,22 @@ const isSavingResult = ref(false);
 const addAthleteForm = ref(null);
 
 const fetchCoachData = async () => {
-  if (!user.value || user.value.role !== 'coach') return;
+  if (!user.value || user.value.role !== 'coach') {
+    router.push({ name: 'login' });
+    return;
+  }
   
   try {
     loading.value = true;
+    error.value = null;
+    
+    // Make API calls in parallel
     const [
       athletesResponse,
       resultsResponse,
       exercisesResponse,
       goalsCountResponse,
       weeklyResultsResponse,
-      athletesListResponse,
-      exercisesListResponse,
       plansResponse,
       goalsResponse
     ] = await Promise.all([
@@ -115,50 +119,51 @@ const fetchCoachData = async () => {
       CoachServices.getExercises(),
       CoachServices.getActiveGoalsCount(),
       CoachServices.getWeeklyResultsCount(),
-      CoachServices.getCoachAthletes(),
-      CoachServices.getExercises(), // Load exercises for the plan creation form
       CoachServices.getCoachPlans(),
       CoachServices.getCoachGoals()
     ]);
     
-    // Store available exercises for the plan creation form
-    if (exercisesListResponse?.data?.data) {
-      availableExercises.value = exercisesListResponse.data.data.map(ex => ({
+    // Process athletes response
+    if (athletesResponse.data?.success && Array.isArray(athletesResponse.data.data)) {
+      athletes.value = athletesResponse.data.data;
+      availableAthletes.value = [...athletesResponse.data.data]; // For dropdowns
+    } else {
+      console.warn('Unexpected athletes response format:', athletesResponse);
+      athletes.value = [];
+    }
+
+    // Process other responses
+    if (resultsResponse.data?.success) {
+      recentResults.value = resultsResponse.data.data || [];
+    }
+
+    if (exercisesResponse.data?.success) {
+      const exercises = exercisesResponse.data.data || [];
+      availableExercises.value = exercises.map(ex => ({
         title: ex.name,
         value: ex.id,
         ...ex
       }));
     }
-
-    if (athletesListResponse.data && athletesListResponse.data.data) {
-      availableAthletes.value = athletesListResponse.data.data;
+    if (goalsCountResponse.data?.success) {
+      activeGoals.value = goalsCountResponse.data.count || 0;
     }
 
-    if (athletesResponse.data && athletesResponse.data.data) {
-      athletes.value = athletesResponse.data.data;
+    if (weeklyResultsResponse.data?.success) {
+      weeklyResults.value = weeklyResultsResponse.data.count || 0;
     }
-    if (resultsResponse.data && resultsResponse.data.data) {
-      recentResults.value = resultsResponse.data.data;
+
+    if (plansResponse.data?.success) {
+      plans.value = plansResponse.data.data || [];
     }
-    if (exercisesResponse.data && exercisesResponse.data.data) {
-      customExercises.value = exercisesResponse.data.data;
-    }
-    if (goalsCountResponse.data && goalsCountResponse.data.count !== undefined) {
-      activeGoals.value = goalsCountResponse.data.count;
-    }
-    if (weeklyResultsResponse.data && weeklyResultsResponse.data.count !== undefined) {
-      weeklyResults.value = weeklyResultsResponse.data.count;
-    }
-    if (plansResponse.data && plansResponse.data.data) {
-      plans.value = plansResponse.data.data;
-    }
-    if (goalsResponse.data && goalsResponse.data.data) {
-      goals.value = goalsResponse.data.data;
+
+    if (goalsResponse.data?.success) {
+      goals.value = goalsResponse.data.data || [];
     }
   } catch (err) {
     console.error('Error fetching coach data:', err);
-    error.value = err.message;
-    showSnackbar('Error loading coach data. Please try again.', 'error');
+    error.value = err.response?.data?.message || err.message;
+    showSnackbar(`Error loading data: ${error.value}`, 'error');
   } finally {
     loading.value = false;
   }
