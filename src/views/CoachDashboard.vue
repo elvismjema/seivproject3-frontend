@@ -399,10 +399,17 @@ const saveGoal = async () => {
     showSnackbar('Setting goal...', 'info');
     
     // Prepare goal data according to backend expectations
+    let targetValue = parseFloat(newGoal.value.targetValue);
+    
+    // Convert minutes to seconds for time-based goals
+    if (newGoal.value.targetUnit === 'time_seconds') {
+      targetValue = targetValue * 60; // Convert minutes to seconds
+    }
+    
     const goalData = {
       athleteId: newGoal.value.athleteId,
       exerciseId: newGoal.value.exerciseId,
-      targetValue: parseFloat(newGoal.value.targetValue),
+      targetValue: targetValue,
       targetUnit: newGoal.value.targetUnit,
       targetDate: newGoal.value.targetDate
     };
@@ -1152,7 +1159,7 @@ const logout = () => {
                   {title: 'Reps', value: 'reps'},
                   {title: 'Weight (lbs)', value: 'weight_lbs'},
                   {title: 'Weight (kg)', value: 'weight_kg'},
-                  {title: 'Time (seconds)', value: 'time_seconds'},
+                  {title: 'Time (minutes)', value: 'time_seconds'},
                   {title: 'Distance (meters)', value: 'distance_meters'}
                 ]"
                 item-title="title"
