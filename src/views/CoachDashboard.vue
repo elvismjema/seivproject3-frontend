@@ -109,6 +109,7 @@ const fetchCoachData = async () => {
       athletesResponse,
       resultsResponse,
       exercisesResponse,
+      customExercisesCountResponse,
       goalsCountResponse,
       weeklyResultsResponse,
       plansResponse,
@@ -117,6 +118,7 @@ const fetchCoachData = async () => {
       CoachServices.getCoachAthletes(),
       CoachServices.getCoachRecentResults(),
       CoachServices.getExercises(),
+      CoachServices.getCustomExercisesCount(),
       CoachServices.getActiveGoalsCount(),
       CoachServices.getWeeklyResultsCount(),
       CoachServices.getCoachPlans(),
@@ -124,7 +126,7 @@ const fetchCoachData = async () => {
     ]);
     
     // Process athletes response
-    if (athletesResponse.data?.success && Array.isArray(athletesResponse.data.data)) {
+    if (athletesResponse.data?.data && Array.isArray(athletesResponse.data.data)) {
       athletes.value = athletesResponse.data.data;
       availableAthletes.value = [...athletesResponse.data.data]; // For dropdowns
     } else {
@@ -133,11 +135,11 @@ const fetchCoachData = async () => {
     }
 
     // Process other responses
-    if (resultsResponse.data?.success) {
+    if (resultsResponse.data?.data) {
       recentResults.value = resultsResponse.data.data || [];
     }
 
-    if (exercisesResponse.data?.success) {
+    if (exercisesResponse.data?.data) {
       const exercises = exercisesResponse.data.data || [];
       availableExercises.value = exercises.map(ex => ({
         title: ex.name,
@@ -145,19 +147,24 @@ const fetchCoachData = async () => {
         ...ex
       }));
     }
-    if (goalsCountResponse.data?.success) {
+
+    if (customExercisesCountResponse.data?.count !== undefined) {
+      customExercises.value = customExercisesCountResponse.data.count || 0;
+    }
+
+    if (goalsCountResponse.data?.count !== undefined) {
       activeGoals.value = goalsCountResponse.data.count || 0;
     }
 
-    if (weeklyResultsResponse.data?.success) {
+    if (weeklyResultsResponse.data?.count !== undefined) {
       weeklyResults.value = weeklyResultsResponse.data.count || 0;
     }
 
-    if (plansResponse.data?.success) {
+    if (plansResponse.data?.data) {
       plans.value = plansResponse.data.data || [];
     }
 
-    if (goalsResponse.data?.success) {
+    if (goalsResponse.data?.data) {
       goals.value = goalsResponse.data.data || [];
     }
   } catch (err) {
