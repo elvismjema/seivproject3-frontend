@@ -23,7 +23,7 @@ const showSnackbar = (message, color = 'success') => {
 };
 const activeTab = ref('overview');
 const athletes = ref([]);
-const customExercises = ref([]);
+const customExercises = ref(0);
 const activeGoals = ref(0);
 const weeklyResults = ref(0);
 const recentResults = ref([]);
