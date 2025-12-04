@@ -10,6 +10,7 @@ const todayWorkout = ref(null);
 const activeGoals = ref([]);
 const completedGoals = ref([]);
 const incompleteGoals = ref([]);
+const coaches = ref([]);
 const recentProgress = ref({
   workoutsThisWeek: 0,
   personalRecords: 0
@@ -24,13 +25,14 @@ onMounted(async () => {
     return;
   }
 
-  // Fetch athlete's workout, goals, and progress
+  // Fetch athlete's workout, goals, progress, and coaches
   try {
     loading.value = true;
-    const [workoutResponse, goalsResponse, statsResponse] = await Promise.all([
+    const [workoutResponse, goalsResponse, statsResponse, coachesResponse] = await Promise.all([
       AthleteServices.getTodayWorkout(),
       AthleteServices.getAthleteGoals(),
-      AthleteServices.getWeeklyStats()
+      AthleteServices.getWeeklyStats(),
+      AthleteServices.getAthleteCoaches()
     ]);
 
     if (workoutResponse.data && workoutResponse.data.data) {
@@ -43,6 +45,9 @@ onMounted(async () => {
     }
     if (statsResponse.data && statsResponse.data.data) {
       recentProgress.value = statsResponse.data.data;
+    }
+    if (coachesResponse.data && coachesResponse.data.data) {
+      coaches.value = coachesResponse.data.data;
     }
   } catch (err) {
     console.error('Error fetching athlete data:', err);
@@ -310,7 +315,7 @@ const isDeadlineApproaching = (deadline) => {
         <v-card>
           <v-card-title>Quick Actions</v-card-title>
           <v-card-text>
-            <v-btn color="#800020" variant="elevated" class="mr-2 mb-2 text-white" @click="$router.push({ name: 'athlete-progress' })">
+            <v-btn color="#800020" variant="elevated" class="mr-2 mb-2 text-white" @click="$router.push('/athlete-progress')">
               <v-icon left>mdi-chart-line</v-icon>
               View Progress
             </v-btn>
