@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Utils from '../config/utils.js';
 import AdminServices from '../services/adminServices.js';
+import UserServices from '../services/userServices.js';
 
 const router = useRouter();
 const user = ref({});
@@ -74,18 +75,30 @@ const fetchAllCoaches = async () => {
   }
 };
 
-const viewAthleteCoaches = (athlete) => {
-  router.push({ 
-    name: 'admin-athlete-coaches',
-    params: { athleteId: athlete.id }
-  });
+const viewAthleteCoaches = async (athlete) => {
+  try {
+    console.log('Navigating to coaches for athlete:', athlete.id);
+    // Navigate directly to the coaches page without fetching data first
+    router.push({ 
+      name: 'admin-athlete-coaches',
+      params: { athleteId: athlete.id }
+    });
+  } catch (error) {
+    console.error('Error in viewAthleteCoaches:', error);
+  }
 };
 
-const viewAthleteProgress = (athlete) => {
-  router.push({ 
-    name: 'athlete-progress',
-    params: { athleteId: athlete.id }
-  });
+const viewAthleteProgress = async (athlete) => {
+  try {
+    console.log('Navigating to progress for athlete:', athlete.id);
+    // Navigate directly to the progress page without fetching data first
+    router.push({ 
+      name: 'athlete-progress',
+      params: { athleteId: athlete.id }
+    });
+  } catch (error) {
+    console.error('Error in viewAthleteProgress:', error);
+  }
 };
 
 const addCoachToAthlete = async () => {
