@@ -625,7 +625,7 @@ const logout = () => {
       <v-col cols="12" sm="6" md="3">
         <v-card>
           <v-card-text class="text-center">
-            <div class="text-h4 font-weight-bold">{{ customExercises.length }}</div>
+            <div class="text-h4 font-weight-bold">{{ customExercises }}</div>
             <div class="text-subtitle-1">Custom Exercises</div>
           </v-card-text>
         </v-card>
