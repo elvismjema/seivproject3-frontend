@@ -112,6 +112,11 @@ const router = createRouter({
       name: "my-coaches",
       component: MyCoaches,
     },
+    {
+      path: "/my-goals",
+      name: "my-goals",
+      component: () => import("./views/MyGoals.vue"),
+    },
     // Workout routes
     {
       path: "/workout-session",
