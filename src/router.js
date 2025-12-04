@@ -67,9 +67,20 @@ const router = createRouter({
       component: () => import("./views/AdminCoachList.vue"),
     },
     {
+      path: "/admin/coaches/:coachId/athletes",
+      name: "admin-coach-athletes",
+      component: () => import("./views/AdminCoachAthletes.vue"),
+    },
+    {
       path: "/admin-athletes",
       name: "admin-athletes",
       component: () => import("./views/AdminAthleteList.vue"),
+    },
+    {
+      path: "/admin/athletes/:athleteId/coaches",
+      name: "admin-athlete-coaches",
+      component: () => import("./views/AdminAthleteCoaches.vue"),
+      props: true
     },
     {
       path: "/admin-plan-management",
@@ -90,9 +101,10 @@ const router = createRouter({
     },
     // Athlete routes
     {
-      path: "/athlete-progress",
+      path: "/athlete-progress/:athleteId?",
       name: "athlete-progress",
       component: AthleteProgress,
+      props: true
     },
     {
       path: "/messages",

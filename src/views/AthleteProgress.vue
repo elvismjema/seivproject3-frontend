@@ -86,9 +86,20 @@
       <v-row v-if="activePlanProgress" class="mt-4">
         <v-col cols="12">
           <v-card elevation="2">
-            <v-card-title class="text-h5 d-flex align-center">
+            <v-card-title class="d-flex align-center">
               <v-icon left color="#800020">mdi-clipboard-check</v-icon>
-              Current Training Plan
+              {{ isAdminView ? 'Athlete\'s' : 'My' }} Current Training Plan
+              <v-spacer></v-spacer>
+              <v-btn
+                v-if="isAdminView && activePlanProgress.plan"
+                color="error"
+                variant="tonal"
+                size="small"
+                prepend-icon="mdi-delete"
+                @click="confirmRemovePlan"
+              >
+                Remove Plan
+              </v-btn>
             </v-card-title>
             <v-card-text>
               <h3 class="text-h6 mb-3">{{ activePlanProgress.plan?.name || 'Training Plan' }}</h3>
@@ -324,12 +335,16 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import Utils from '../config/utils.js';
+import AdminServices from '../services/adminServices.js';
 import AthleteServices from '../services/athleteServices.js';
 
 const router = useRouter();
+const route = useRoute();
 const user = ref({});
+const isAdminView = ref(false);
+const athleteId = ref(null);
 const workoutHistory = ref([]);
 const activeGoals = ref([]);
 const completedGoals = ref([]);
@@ -460,69 +475,89 @@ const goBack = () => {
 };
 
 const getProgressColor = (progress) => {
-  if (progress >= 80) return 'success';
-  if (progress >= 50) return 'warning';
-  return 'error';
+  if (progress < 30) return 'error';
+  if (progress < 70) return 'warning';
+  return 'success';
+};
+
+const confirmRemovePlan = async () => {
+  if (!isAdminView.value || !athleteId.value || !activePlanProgress.value?.plan?.id) return;
+  
+  const confirmed = confirm('Are you sure you want to remove this plan from the athlete? This action cannot be undone.');
+  
+  if (confirmed) {
+    try {
+      await AdminServices.removeAthletePlan(athleteId.value, activePlanProgress.value.plan.id);
+      // Refresh the data
+      await fetchData();
+    } catch (error) {
+      console.error('Error removing plan:', error);
+      alert('Failed to remove plan. Please try again.');
+    }
+  }
+};
+
+const fetchData = async () => {
+  try {
+    const targetUserId = isAdminView.value ? athleteId.value : user.value.id;
+    
+    // Fetch all necessary data in parallel
+    const [progressResponse, goalsResponse, weeklyStatsResponse] = await Promise.all([
+      isAdminView.value 
+        ? AdminServices.getAthleteProgress(targetUserId)
+        : AthleteServices.getAthleteProgress(targetUserId),
+      isAdminView.value 
+        ? AdminServices.getAthleteGoals(targetUserId)
+        : AthleteServices.getAthleteGoals(targetUserId),
+      isAdminView.value 
+        ? AdminServices.getWeeklyStats(targetUserId)
+        : AthleteServices.getWeeklyStats(targetUserId)
+    ]);
+    
+    // Update the component state with the fetched data
+    workoutHistory.value = progressResponse.data.workoutHistory || [];
+    activeGoals.value = goalsResponse.data.activeGoals || [];
+    completedGoals.value = goalsResponse.data.completedGoals || [];
+    activePlanProgress.value = progressResponse.data.activePlanProgress || null;
+    workoutsByWeek.value = weeklyStatsResponse.data.workoutsByWeek || [];
+    maxWorkoutsPerWeek.value = Math.max(...weeklyStatsResponse.data.workoutsByWeek.map(w => w.count), 5);
+    
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  }
 };
 
 // Lifecycle hooks
 onMounted(async () => {
   user.value = Utils.getStore("user");
-  if (!user.value || user.value.role !== 'athlete') {
+  
+  // Check if this is an admin view
+  if (route.params.athleteId) {
+    isAdminView.value = true;
+    athleteId.value = route.params.athleteId;
+    
+    // If admin is viewing another athlete's progress
+    if (user.value.role !== 'admin') {
+      router.push({ name: 'unauthorized' });
+      return;
+    }
+  } else if (user.value.role !== 'athlete') {
     router.push({ name: 'login' });
     return;
   }
   
   try {
     loading.value = true;
+    await fetchData();
     
-    // Fetch workout history
-    const workoutResponse = await AthleteServices.getWorkoutHistory(user.value.id);
-    workoutHistory.value = workoutResponse.data || [];
-    
-    // Calculate weekly workout frequency
-    const weeklyData = [];
-    const now = new Date();
-    
-    for (let i = 7; i >= 0; i--) {
-      const endDate = new Date(now);
-      endDate.setDate(now.getDate() - (i * 7));
-      const startDate = new Date(endDate);
-      startDate.setDate(endDate.getDate() - 6);
-      
-      const weekWorkouts = workoutHistory.value.filter(workout => {
-        const workoutDate = new Date(workout.performedDate);
-        return workoutDate >= startDate && workoutDate <= endDate;
-      });
-      
-      weeklyData.push({
-        week: `Week ${8 - i}`,
-        count: weekWorkouts.length,
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0]
-      });
-    }
-    
-    workoutsByWeek.value = weeklyData;
-    maxWorkoutsPerWeek.value = Math.max(...weeklyData.map(w => w.count), 5);
-    
-    // Fetch goals
-    const goalsResponse = await AthleteServices.getAthleteGoals(user.value.id);
-    const allGoals = goalsResponse.data || [];
-    activeGoals.value = allGoals.filter(goal => goal.status !== 'completed');
-    completedGoals.value = allGoals.filter(goal => goal.status === 'completed');
-    
-    // Calculate goal progress
-    activeGoals.value.forEach(goal => {
-      if (goal.targetValue && goal.currentValue) {
-        goal.progress = Math.min(Math.round((goal.currentValue / goal.targetValue) * 100), 100);
-      } else {
-        goal.progress = 0;
-      }
-    });
+    // Get the target user ID based on the view
+    const targetUserId = isAdminView.value ? athleteId.value : user.value.id;
     
     // Fetch assigned plans
-    const plansResponse = await AthleteServices.getAssignedPlans(user.value.id);
+    const plansResponse = isAdminView.value 
+      ? await AdminServices.getAssignedPlans(targetUserId)
+      : await AthleteServices.getAssignedPlans(targetUserId);
+      
     const activePlan = (plansResponse.data || []).find(plan => plan.status === 'active');
     
     if (activePlan) {

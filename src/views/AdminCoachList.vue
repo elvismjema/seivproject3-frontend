@@ -28,12 +28,20 @@ onMounted(async () => {
 const fetchCoaches = async () => {
   loading.value = true;
   try {
-    const response = await UserServices.getAllUsers();
-    if (response.data) {
-      coaches.value = response.data.filter(u => u.role === 'coach');
-    }
+    // Use the new service method that includes athlete counts
+    const coachesWithCounts = await AdminServices.getCoachesWithAthleteCounts();
+    coaches.value = coachesWithCounts;
   } catch (error) {
     console.error('Error fetching coaches:', error);
+    // Fallback to the old method if the new one fails
+    try {
+      const response = await UserServices.getAllUsers();
+      if (response.data) {
+        coaches.value = response.data.filter(u => u.role === 'coach');
+      }
+    } catch (fallbackError) {
+      console.error('Fallback error fetching coaches:', fallbackError);
+    }
   } finally {
     loading.value = false;
   }
@@ -171,7 +179,8 @@ const logout = () => {
                         size="small"
                         color="#800020"
                         variant="text"
-                        @click="viewCoachAthletes(coach)"
+                        :to="{ name: 'admin-coach-athletes', params: { coachId: coach.id } }"
+                        class="text-none"
                       >
                         <v-icon size="small" left>mdi-account-details</v-icon>
                         Manage Athletes

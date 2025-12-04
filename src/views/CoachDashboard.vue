@@ -23,7 +23,7 @@ const showSnackbar = (message, color = 'success') => {
 };
 const activeTab = ref('overview');
 const athletes = ref([]);
-const customExercises = ref([]);
+const totalExercises = ref(0);
 const activeGoals = ref(0);
 const weeklyResults = ref(0);
 const recentResults = ref([]);
@@ -124,7 +124,7 @@ const fetchCoachData = async () => {
     ]);
     
     // Process athletes response
-    if (athletesResponse.data?.success && Array.isArray(athletesResponse.data.data)) {
+    if (athletesResponse.data?.data && Array.isArray(athletesResponse.data.data)) {
       athletes.value = athletesResponse.data.data;
       availableAthletes.value = [...athletesResponse.data.data]; // For dropdowns
     } else {
@@ -133,31 +133,33 @@ const fetchCoachData = async () => {
     }
 
     // Process other responses
-    if (resultsResponse.data?.success) {
+    if (resultsResponse.data?.data) {
       recentResults.value = resultsResponse.data.data || [];
     }
 
-    if (exercisesResponse.data?.success) {
+    if (exercisesResponse.data?.data) {
       const exercises = exercisesResponse.data.data || [];
       availableExercises.value = exercises.map(ex => ({
         title: ex.name,
         value: ex.id,
         ...ex
       }));
+      totalExercises.value = exercises.length;
     }
-    if (goalsCountResponse.data?.success) {
+
+    if (goalsCountResponse.data?.count !== undefined) {
       activeGoals.value = goalsCountResponse.data.count || 0;
     }
 
-    if (weeklyResultsResponse.data?.success) {
+    if (weeklyResultsResponse.data?.count !== undefined) {
       weeklyResults.value = weeklyResultsResponse.data.count || 0;
     }
 
-    if (plansResponse.data?.success) {
+    if (plansResponse.data?.data) {
       plans.value = plansResponse.data.data || [];
     }
 
-    if (goalsResponse.data?.success) {
+    if (goalsResponse.data?.data) {
       goals.value = goalsResponse.data.data || [];
     }
   } catch (err) {
@@ -618,8 +620,8 @@ const logout = () => {
       <v-col cols="12" sm="6" md="3">
         <v-card>
           <v-card-text class="text-center">
-            <div class="text-h4 font-weight-bold">{{ customExercises.length }}</div>
-            <div class="text-subtitle-1">Custom Exercises</div>
+            <div class="text-h4 font-weight-bold">{{ totalExercises }}</div>
+            <div class="text-subtitle-1">Total Exercises</div>
           </v-card-text>
         </v-card>
       </v-col>
