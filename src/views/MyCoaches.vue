@@ -41,6 +41,13 @@ const formatDate = (dateString) => {
     day: 'numeric' 
   });
 };
+
+const messageCoach = (coachId) => {
+  router.push({ 
+    name: 'AthleteMessages', 
+    query: { coachId } 
+  });
+};
 </script>
 
 <template>
@@ -101,6 +108,17 @@ const formatDate = (dateString) => {
                           </v-list-item-title>
                         </v-list-item>
                       </v-list>
+                      <div class="d-flex justify-end mt-3">
+                        <v-btn 
+                          color="primary" 
+                          variant="outlined"
+                          size="small"
+                          @click="messageCoach(coachRel.coach.id)"
+                        >
+                          <v-icon left>mdi-message-text</v-icon>
+                          Message
+                        </v-btn>
+                      </div>
                     </v-card-text>
                     <v-card-actions>
                       <v-btn 
