@@ -23,7 +23,7 @@ const showSnackbar = (message, color = 'success') => {
 };
 const activeTab = ref('overview');
 const athletes = ref([]);
-const customExercises = ref(0);
+const totalExercises = ref(0);
 const activeGoals = ref(0);
 const weeklyResults = ref(0);
 const recentResults = ref([]);
@@ -109,7 +109,6 @@ const fetchCoachData = async () => {
       athletesResponse,
       resultsResponse,
       exercisesResponse,
-      customExercisesCountResponse,
       goalsCountResponse,
       weeklyResultsResponse,
       plansResponse,
@@ -118,7 +117,6 @@ const fetchCoachData = async () => {
       CoachServices.getCoachAthletes(),
       CoachServices.getCoachRecentResults(),
       CoachServices.getExercises(),
-      CoachServices.getCustomExercisesCount(),
       CoachServices.getActiveGoalsCount(),
       CoachServices.getWeeklyResultsCount(),
       CoachServices.getCoachPlans(),
@@ -146,10 +144,7 @@ const fetchCoachData = async () => {
         value: ex.id,
         ...ex
       }));
-    }
-
-    if (customExercisesCountResponse.data?.count !== undefined) {
-      customExercises.value = customExercisesCountResponse.data.count || 0;
+      totalExercises.value = exercises.length;
     }
 
     if (goalsCountResponse.data?.count !== undefined) {
@@ -625,8 +620,8 @@ const logout = () => {
       <v-col cols="12" sm="6" md="3">
         <v-card>
           <v-card-text class="text-center">
-            <div class="text-h4 font-weight-bold">{{ customExercises }}</div>
-            <div class="text-subtitle-1">Custom Exercises</div>
+            <div class="text-h4 font-weight-bold">{{ totalExercises }}</div>
+            <div class="text-subtitle-1">Total Exercises</div>
           </v-card-text>
         </v-card>
       </v-col>
