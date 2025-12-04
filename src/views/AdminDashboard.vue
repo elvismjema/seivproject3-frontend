@@ -64,7 +64,7 @@ const logout = () => {
     </v-row>
 
     <v-row>
-      <v-col cols="12" md="3">
+      <v-col cols="12" md="4">
         <v-card class="pa-4 text-center">
           <v-icon size="48" color="#800020">mdi-account-group</v-icon>
           <h2 class="mt-3">{{ stats.totalUsers }}</h2>
@@ -73,16 +73,7 @@ const logout = () => {
         </v-card>
       </v-col>
 
-      <v-col cols="12" md="3">
-        <v-card class="pa-4 text-center">
-          <v-icon size="48" color="#800020">mdi-clipboard-list</v-icon>
-          <h2 class="mt-3">{{ stats.totalPlans }}</h2>
-          <p class="text-grey-darken-2">Total Plans</p>
-          <v-btn color="#800020" variant="text" @click="$router.push({ name: 'admin-plan-management' })">Manage Plans</v-btn>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" md="3">
+      <v-col cols="12" md="4">
         <v-card class="pa-4 text-center">
           <v-icon size="48" color="#800020">mdi-whistle</v-icon>
           <h2 class="mt-3">{{ stats.totalCoaches }}</h2>
@@ -91,7 +82,7 @@ const logout = () => {
         </v-card>
       </v-col>
 
-      <v-col cols="12" md="3">
+      <v-col cols="12" md="4">
         <v-card class="pa-4 text-center">
           <v-icon size="48" color="#800020">mdi-run</v-icon>
           <h2 class="mt-3">{{ stats.totalAthletes }}</h2>
