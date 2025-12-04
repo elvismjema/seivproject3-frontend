@@ -103,9 +103,14 @@ const formatDate = (dateString) => {
                       </v-list>
                     </v-card-text>
                     <v-card-actions>
-                      <v-btn color="#800020" variant="text" block :href="'mailto:' + coachRel.coach?.email">
-                        <v-icon left>mdi-email-send</v-icon>
-                        Contact Coach
+                      <v-btn 
+                        color="#800020" 
+                        variant="text" 
+                        block 
+                        @click="$router.push({ name: 'coach-messaging', query: { userId: coachRel.coach?.id } })"
+                      >
+                        <v-icon left>mdi-message-text</v-icon>
+                        Message Coach
                       </v-btn>
                     </v-card-actions>
                   </v-card>
