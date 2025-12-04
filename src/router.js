@@ -14,6 +14,7 @@ import RecordWorkout from "./views/RecordWorkout.vue";
 import WorkoutSchedule from "./views/WorkoutSchedule.vue";
 import MyCoaches from "./views/MyCoaches.vue";
 import CoachMessaging from "./views/CoachMessaging.vue";
+import AthleteMessages from "./views/AthleteMessages.vue";
 
 // Admin imports
 import UserManagement from "./views/UserManagement.vue";
@@ -107,9 +108,15 @@ const router = createRouter({
     },
     {
       path: "/messages",
+      name: "AthleteMessages",
+      component: AthleteMessages,
+      meta: { requiresAuth: true, roles: ['athlete'] }
+    },
+    {
+      path: "/coach-messages",
       name: "coach-messaging",
       component: CoachMessaging,
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, roles: ['coach'] }
     },
     {
       path: "/coach/athlete-progress/:id",
