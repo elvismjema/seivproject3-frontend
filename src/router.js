@@ -13,6 +13,7 @@ import AthleteProgress from "./views/AthleteProgress.vue";
 import RecordWorkout from "./views/RecordWorkout.vue";
 import WorkoutSchedule from "./views/WorkoutSchedule.vue";
 import MyCoaches from "./views/MyCoaches.vue";
+import CoachMessaging from "./views/CoachMessaging.vue";
 
 // Admin imports
 import UserManagement from "./views/UserManagement.vue";
@@ -103,6 +104,12 @@ const router = createRouter({
       name: "athlete-progress",
       component: AthleteProgress,
       props: true
+    },
+    {
+      path: "/messages",
+      name: "coach-messaging",
+      component: CoachMessaging,
+      meta: { requiresAuth: true }
     },
     {
       path: "/coach/athlete-progress/:id",
