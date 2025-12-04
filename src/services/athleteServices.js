@@ -18,7 +18,7 @@ const AthleteServices = {
 
   // Get weekly stats
   getWeeklyStats: async () => {
-    return apiClient.get("/athlete/stats/weekly");
+    return apiClient.get("/api/athlete/stats/weekly");
   },
 
   // Get athlete's goals
