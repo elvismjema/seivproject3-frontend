@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Utils from '../config/utils.js';
-import UserServices from '../services/userServices.js';
+import AdminServices from '../services/adminServices.js';
 
 const router = useRouter();
 const user = ref({});
@@ -29,16 +29,38 @@ onMounted(async () => {
 
 const fetchAthletes = async () => {
   loading.value = true;
-  try {
-    const response = await UserServices.getAllUsers();
-    if (response.data) {
-      athletes.value = response.data.filter(u => u.role === 'athlete');
+    try {
+      const response = await AdminServices.getAllUsers();
+      if (response.data) {
+        // Get athletes with their coaches
+        const athletesData = response.data.filter(u => u.role === 'athlete');
+        
+        // Fetch coaches for each athlete
+        const athletesWithCoaches = await Promise.all(athletesData.map(async (athlete) => {
+          try {
+            const coachesResponse = await AdminServices.getAthleteCoaches(athlete.id);
+            return {
+              ...athlete,
+              coaches: coachesResponse.data?.coaches || [],
+              coachCount: coachesResponse.data?.coaches?.length || 0
+            };
+          } catch (error) {
+            console.error(`Error fetching coaches for athlete ${athlete.id}:`, error);
+            return {
+              ...athlete,
+              coaches: [],
+              coachCount: 0
+            };
+          }
+        }));
+        
+        athletes.value = athletesWithCoaches;
+      }
+    } catch (error) {
+      console.error('Error fetching athletes:', error);
+    } finally {
+      loading.value = false;
     }
-  } catch (error) {
-    console.error('Error fetching athletes:', error);
-  } finally {
-    loading.value = false;
-  }
 };
 
 const fetchAllCoaches = async () => {
@@ -52,35 +74,18 @@ const fetchAllCoaches = async () => {
   }
 };
 
-const viewAthleteCoaches = async (athlete) => {
-  selectedAthlete.value = athlete;
-  try {
-    const response = await UserServices.getAthleteCoaches(athlete.id);
-    athleteCoaches.value = response.data || [];
-    dialog.value = true;
-  } catch (error) {
-    console.error('Error fetching athlete coaches:', error);
-  }
+const viewAthleteCoaches = (athlete) => {
+  router.push({ 
+    name: 'admin-athlete-coaches',
+    params: { athleteId: athlete.id }
+  });
 };
 
-const viewAthleteStats = async (athlete) => {
-  selectedAthlete.value = athlete;
-  try {
-    const [progressResponse, goalsResponse, weeklyStatsResponse] = await Promise.all([
-      UserServices.getAthleteProgress(athlete.id),
-      UserServices.getAthleteGoals(athlete.id),
-      UserServices.getWeeklyStats(athlete.id)
-    ]);
-    
-    athleteStats.value = {
-      progress: progressResponse.data || [],
-      goals: goalsResponse.data || [],
-      weeklyStats: weeklyStatsResponse.data || {}
-    };
-    statsDialog.value = true;
-  } catch (error) {
-    console.error('Error fetching athlete stats:', error);
-  }
+const viewAthleteProgress = (athlete) => {
+  router.push({ 
+    name: 'athlete-progress',
+    params: { athleteId: athlete.id }
+  });
 };
 
 const addCoachToAthlete = async () => {
@@ -178,7 +183,6 @@ const logout = () => {
                   <tr>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Coaches</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -187,44 +191,30 @@ const logout = () => {
                     <td>{{ athlete.fName }} {{ athlete.lName }}</td>
                     <td>{{ athlete.email }}</td>
                     <td>
-                      <v-chip 
-                        v-if="athlete.coachCount" 
-                        color="#800020" 
-                        text-color="white" 
-                        size="small"
-                      >
-                        <v-icon left size="small">mdi-account-tie</v-icon>
-                        {{ athlete.coachCount }} Coaches
-                      </v-chip>
-                      <v-chip v-else color="grey" text-color="white" size="small">
-                        No Coaches
-                      </v-chip>
-                    </td>
-                    <td>
                       <v-tooltip text="View Coaches" location="bottom">
-                        <template v-slot:activator="{ props }">
+                        <template v-slot:activator="{ props: tooltipProps }">
                           <v-btn
-                            v-bind="props"
-                            size="small"
+                            v-bind="tooltipProps"
+                            icon
+                            @click="viewAthleteCoaches(athlete)"
                             color="primary"
                             variant="text"
-                            icon="mdi-account-tie"
-                            @click="viewAthleteCoaches(athlete)"
-                            class="mr-2"
-                          ></v-btn>
+                          >
+                            <v-icon>mdi-account-group</v-icon>
+                          </v-btn>
                         </template>
                       </v-tooltip>
-                      
-                      <v-tooltip text="View Stats" location="bottom">
-                        <template v-slot:activator="{ props }">
+                      <v-tooltip text="View Progress" location="bottom">
+                        <template v-slot:activator="{ props: tooltipProps }">
                           <v-btn
-                            v-bind="props"
-                            size="small"
-                            color="success"
+                            v-bind="tooltipProps"
+                            icon
+                            @click="viewAthleteProgress(athlete)"
+                            color="primary"
                             variant="text"
-                            icon="mdi-chart-line"
-                            @click="viewAthleteStats(athlete)"
-                          ></v-btn>
+                          >
+                            <v-icon>mdi-chart-line</v-icon>
+                          </v-btn>
                         </template>
                       </v-tooltip>
                     </td>

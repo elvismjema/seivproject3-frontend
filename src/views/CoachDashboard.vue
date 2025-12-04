@@ -23,7 +23,7 @@ const showSnackbar = (message, color = 'success') => {
 };
 const activeTab = ref('overview');
 const athletes = ref([]);
-const customExercises = ref([]);
+const totalExercises = ref(0);
 const activeGoals = ref(0);
 const weeklyResults = ref(0);
 const recentResults = ref([]);
@@ -95,18 +95,22 @@ const isSavingResult = ref(false);
 const addAthleteForm = ref(null);
 
 const fetchCoachData = async () => {
-  if (!user.value || user.value.role !== 'coach') return;
+  if (!user.value || user.value.role !== 'coach') {
+    router.push({ name: 'login' });
+    return;
+  }
   
   try {
     loading.value = true;
+    error.value = null;
+    
+    // Make API calls in parallel
     const [
       athletesResponse,
       resultsResponse,
       exercisesResponse,
       goalsCountResponse,
       weeklyResultsResponse,
-      athletesListResponse,
-      exercisesListResponse,
       plansResponse,
       goalsResponse
     ] = await Promise.all([
@@ -115,50 +119,53 @@ const fetchCoachData = async () => {
       CoachServices.getExercises(),
       CoachServices.getActiveGoalsCount(),
       CoachServices.getWeeklyResultsCount(),
-      CoachServices.getCoachAthletes(),
-      CoachServices.getExercises(), // Load exercises for the plan creation form
       CoachServices.getCoachPlans(),
       CoachServices.getCoachGoals()
     ]);
     
-    // Store available exercises for the plan creation form
-    if (exercisesListResponse?.data?.data) {
-      availableExercises.value = exercisesListResponse.data.data.map(ex => ({
+    // Process athletes response
+    if (athletesResponse.data?.data && Array.isArray(athletesResponse.data.data)) {
+      athletes.value = athletesResponse.data.data;
+      availableAthletes.value = [...athletesResponse.data.data]; // For dropdowns
+    } else {
+      console.warn('Unexpected athletes response format:', athletesResponse);
+      athletes.value = [];
+    }
+
+    // Process other responses
+    if (resultsResponse.data?.data) {
+      recentResults.value = resultsResponse.data.data || [];
+    }
+
+    if (exercisesResponse.data?.data) {
+      const exercises = exercisesResponse.data.data || [];
+      availableExercises.value = exercises.map(ex => ({
         title: ex.name,
         value: ex.id,
         ...ex
       }));
+      totalExercises.value = exercises.length;
     }
 
-    if (athletesListResponse.data && athletesListResponse.data.data) {
-      availableAthletes.value = athletesListResponse.data.data;
+    if (goalsCountResponse.data?.count !== undefined) {
+      activeGoals.value = goalsCountResponse.data.count || 0;
     }
 
-    if (athletesResponse.data && athletesResponse.data.data) {
-      athletes.value = athletesResponse.data.data;
+    if (weeklyResultsResponse.data?.count !== undefined) {
+      weeklyResults.value = weeklyResultsResponse.data.count || 0;
     }
-    if (resultsResponse.data && resultsResponse.data.data) {
-      recentResults.value = resultsResponse.data.data;
+
+    if (plansResponse.data?.data) {
+      plans.value = plansResponse.data.data || [];
     }
-    if (exercisesResponse.data && exercisesResponse.data.data) {
-      customExercises.value = exercisesResponse.data.data;
-    }
-    if (goalsCountResponse.data && goalsCountResponse.data.count !== undefined) {
-      activeGoals.value = goalsCountResponse.data.count;
-    }
-    if (weeklyResultsResponse.data && weeklyResultsResponse.data.count !== undefined) {
-      weeklyResults.value = weeklyResultsResponse.data.count;
-    }
-    if (plansResponse.data && plansResponse.data.data) {
-      plans.value = plansResponse.data.data;
-    }
-    if (goalsResponse.data && goalsResponse.data.data) {
-      goals.value = goalsResponse.data.data;
+
+    if (goalsResponse.data?.data) {
+      goals.value = goalsResponse.data.data || [];
     }
   } catch (err) {
     console.error('Error fetching coach data:', err);
-    error.value = err.message;
-    showSnackbar('Error loading coach data. Please try again.', 'error');
+    error.value = err.response?.data?.message || err.message;
+    showSnackbar(`Error loading data: ${error.value}`, 'error');
   } finally {
     loading.value = false;
   }
@@ -613,8 +620,8 @@ const logout = () => {
       <v-col cols="12" sm="6" md="3">
         <v-card>
           <v-card-text class="text-center">
-            <div class="text-h4 font-weight-bold">{{ customExercises.length }}</div>
-            <div class="text-subtitle-1">Custom Exercises</div>
+            <div class="text-h4 font-weight-bold">{{ totalExercises }}</div>
+            <div class="text-subtitle-1">Total Exercises</div>
           </v-card-text>
         </v-card>
       </v-col>

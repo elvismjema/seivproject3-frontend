@@ -8,8 +8,9 @@ const router = useRouter();
 const route = useRoute();
 const user = ref({});
 const athlete = ref(null);
-const workoutHistory = ref([]);
+const workouts = ref([]);
 const goals = ref([]);
+const plans = ref([]);
 const stats = ref({
   totalWorkouts: 0,
   weeklyWorkouts: 0,
@@ -40,69 +41,116 @@ const fetchAthleteProgress = async () => {
 
   try {
     loading.value = true;
+    error.value = null;
     
     // Fetch athlete progress data from backend
     const response = await CoachServices.getAthleteProgress(athleteId);
     
-    if (response.data && response.data.data) {
+    if (response.data && response.data.success && response.data.data) {
       const data = response.data.data;
       
+      // Update athlete info
       athlete.value = data.athlete || {};
-      workoutHistory.value = data.workoutHistory || [];
-      goals.value = data.goals || [];
-      stats.value = {
-        totalWorkouts: data.totalWorkouts || 0,
-        weeklyWorkouts: data.weeklyWorkouts || 0,
-        personalRecords: data.personalRecords || 0,
-        currentStreak: data.currentStreak || 0
-      };
       
-      // Prepare chart data if available
-      if (data.progressData) {
-        prepareChartData(data.progressData);
+      // Update workouts, goals, and plans
+      workouts.value = data.workouts || [];
+      goals.value = data.goals || [];
+      plans.value = data.plans || [];
+      
+      // Update stats
+      if (data.stats) {
+        stats.value = {
+          totalWorkouts: data.stats.totalWorkouts || 0,
+          weeklyWorkouts: data.stats.weeklyWorkouts || 0,
+          personalRecords: data.stats.personalRecords || 0,
+          currentStreak: data.stats.currentStreak || 0
+        };
       }
+      
+      // Prepare chart data if we have workouts
+      if (workouts.value.length > 0) {
+        prepareChartData(workouts.value);
+      }
+    } else {
+      // Handle case where API returns success: false
+      error.value = response.data?.message || 'Failed to load athlete progress';
     }
   } catch (err) {
     console.error('Error fetching athlete progress:', err);
-    error.value = err.response?.data?.message || 'Failed to load athlete progress';
+    // Only show error for server errors (500+), not for empty data
+    if (err.response?.status >= 500) {
+      error.value = err.response?.data?.message || 'Failed to load athlete progress. Please try again later.';
+    } else {
+      // For 404 or other client errors, set empty data
+      workouts.value = [];
+      goals.value = [];
+      plans.value = [];
+      stats.value = {
+        totalWorkouts: 0,
+        weeklyWorkouts: 0,
+        personalRecords: 0,
+        currentStreak: 0
+      };
+    }
   } finally {
     loading.value = false;
   }
 };
 
-const prepareChartData = (progressData) => {
-  if (!progressData || progressData.length === 0) return;
+const prepareChartData = (workouts) => {
+  if (!workouts || workouts.length === 0) return;
   
   // Group data by exercise
   const exerciseGroups = {};
   
-  progressData.forEach(item => {
-    const exerciseName = item.exerciseName || 'Unknown';
+  workouts.forEach(workout => {
+    const exerciseName = workout.exercise?.name || 'Unknown';
     if (!exerciseGroups[exerciseName]) {
       exerciseGroups[exerciseName] = [];
     }
+    
+    // Calculate volume (weight * reps * sets) or use duration if it's a cardio exercise
+    const volume = workout.weight && workout.reps && workout.sets 
+      ? workout.weight * workout.reps * workout.sets 
+      : workout.duration || 0;
+      
     exerciseGroups[exerciseName].push({
-      date: new Date(item.date).toLocaleDateString(),
-      weight: item.weight || 0,
-      reps: item.reps || 0,
-      volume: (item.weight || 0) * (item.reps || 0) * (item.sets || 1)
+      date: new Date(workout.performedDate).toLocaleDateString(),
+      weight: workout.weight || 0,
+      reps: workout.reps || 0,
+      sets: workout.sets || 1,
+      volume: volume
     });
   });
   
-  // Prepare chart datasets
-  const colors = ['#800020', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4'];
-  const datasets = Object.keys(exerciseGroups).map((exerciseName, index) => ({
-    label: exerciseName,
-    data: exerciseGroups[exerciseName].map(d => d.volume),
-    borderColor: colors[index % colors.length],
-    backgroundColor: colors[index % colors.length] + '20',
-    tension: 0.4
-  }));
-  
-  chartData.value = {
-    labels: exerciseGroups[Object.keys(exerciseGroups)[0]].map(d => d.date),
-    datasets
-  };
+  // If we have data, prepare the chart
+  if (Object.keys(exerciseGroups).length > 0) {
+    // Prepare chart datasets
+    const colors = ['#800020', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4'];
+    const datasets = Object.keys(exerciseGroups).map((exerciseName, index) => ({
+      label: exerciseName,
+      data: exerciseGroups[exerciseName].map(d => d.volume),
+      borderColor: colors[index % colors.length],
+      backgroundColor: colors[index % colors.length] + '20',
+      tension: 0.4,
+      fill: true
+    }));
+    
+    // Use the dates from the first exercise as labels
+    const firstExercise = exerciseGroups[Object.keys(exerciseGroups)[0]];
+    const dates = firstExercise.map(d => d.date);
+    
+    chartData.value = {
+      labels: dates,
+      datasets
+    };
+  } else {
+    // Clear chart data if no valid data
+    chartData.value = {
+      labels: [],
+      datasets: []
+    };
+  }
 };
 
 const formatDate = (dateString) => {
@@ -159,8 +207,8 @@ onMounted(async () => {
         </v-col>
       </v-row>
 
-      <!-- Error State -->
-      <v-row v-else-if="error" class="mt-5">
+      <!-- Error State (only show for server errors) -->
+      <v-row v-if="error && !loading" class="mt-5">
         <v-col cols="12">
           <v-alert type="error" variant="tonal">
             <v-icon>mdi-alert-circle</v-icon>
@@ -199,78 +247,90 @@ onMounted(async () => {
 
         <!-- Statistics Cards -->
         <v-row class="mt-4">
-          <v-col cols="12" sm="6" md="3">
-            <v-card>
-              <v-card-text class="text-center">
-                <v-icon size="40" color="#800020">mdi-calendar-check</v-icon>
-                <div class="text-h4 font-weight-bold mt-2">{{ stats.totalWorkouts }}</div>
-                <div class="text-subtitle-1">Total Workouts</div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-          <v-col cols="12" sm="6" md="3">
-            <v-card>
-              <v-card-text class="text-center">
-                <v-icon size="40" color="#800020">mdi-calendar-week</v-icon>
-                <div class="text-h4 font-weight-bold mt-2">{{ stats.weeklyWorkouts }}</div>
-                <div class="text-subtitle-1">This Week</div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-          <v-col cols="12" sm="6" md="3">
-            <v-card>
-              <v-card-text class="text-center">
-                <v-icon size="40" color="#800020">mdi-trophy</v-icon>
-                <div class="text-h4 font-weight-bold mt-2">{{ stats.personalRecords }}</div>
-                <div class="text-subtitle-1">Personal Records</div>
-              </v-card-text>
-            </v-card>
-          </v-col>
-          <v-col cols="12" sm="6" md="3">
-            <v-card>
-              <v-card-text class="text-center">
-                <v-icon size="40" color="#800020">mdi-fire</v-icon>
-                <div class="text-h4 font-weight-bold mt-2">{{ stats.currentStreak }}</div>
-                <div class="text-subtitle-1">Day Streak</div>
-              </v-card-text>
+          <v-col cols="12" sm="6" md="3" v-for="(stat, index) in [
+            { title: 'Total Workouts', value: stats.totalWorkouts, icon: 'mdi-dumbbell', color: 'primary' },
+            { title: 'This Week', value: stats.weeklyWorkouts, icon: 'mdi-calendar-week', color: 'success' },
+            { title: 'Personal Records', value: stats.personalRecords, icon: 'mdi-trophy', color: 'warning' },
+            { title: 'Current Streak', value: `${stats.currentStreak} ${stats.currentStreak === 1 ? 'day' : 'days'}`, icon: 'mdi-fire', color: 'error' }
+          ]" :key="index">
+            <v-card class="pa-4 text-center" height="100%">
+              <v-icon :color="stat.color" size="48">{{ stat.icon }}</v-icon>
+              <h3 class="text-h4 mt-2">{{ stat.value || 0 }}</h3>
+              <p class="text-subtitle-1 text-grey">{{ stat.title }}</p>
             </v-card>
           </v-col>
         </v-row>
 
-        <!-- Goals Section -->
-        <v-row class="mt-4" v-if="goals.length > 0">
+        <!-- Goals -->
+        <v-row class="mt-4">
           <v-col cols="12">
             <v-card>
               <v-card-title class="text-h5">
-                <v-icon left color="#800020">mdi-target</v-icon>
+                <v-icon left color="#800020">mdi-flag-checkered</v-icon>
                 Active Goals
+                <v-spacer></v-spacer>
+                <v-chip color="primary" size="small" class="mr-2">
+                  {{ goals.length }} active
+                </v-chip>
               </v-card-title>
               <v-card-text>
-                <v-list>
-                  <v-list-item v-for="goal in goals" :key="goal.id" class="mb-3">
-                    <v-list-item-title class="font-weight-bold">
-                      {{ goal.title }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle class="mt-1">
-                      {{ goal.description }}
-                    </v-list-item-subtitle>
-                    <v-list-item-subtitle class="mt-2">
+                <v-list v-if="goals.length > 0" class="pa-0">
+                  <v-list-item 
+                    v-for="(goal, index) in goals" 
+                    :key="index" 
+                    class="px-0"
+                  >
+                    <v-list-item-avatar>
+                      <v-progress-circular
+                        :model-value="getGoalProgress(goal)"
+                        :color="getGoalColor(getGoalProgress(goal))"
+                        :size="48"
+                        :width="4"
+                        class="mr-2"
+                      >
+                        {{ getGoalProgress(goal) }}%
+                      </v-progress-circular>
+                    </v-list-item-avatar>
+                    <v-list-item-content>
+                      <div class="d-flex align-center">
+                        <v-list-item-title class="text-h6">
+                          {{ goal.title }}
+                        </v-list-item-title>
+                        <v-chip 
+                          v-if="goal.status" 
+                          :color="goal.status === 'completed' ? 'success' : 'primary'" 
+                          size="x-small" 
+                          class="ml-2"
+                          density="compact"
+                        >
+                          {{ goal.status }}
+                        </v-chip>
+                      </div>
+                      <v-list-item-subtitle class="mt-1">
+                        {{ goal.description }}
+                      </v-list-item-subtitle>
+                      <div v-if="goal.targetDate" class="text-caption text-grey">
+                        <v-icon x-small>mdi-calendar</v-icon> 
+                        Target: {{ formatDate(goal.targetDate) }}
+                      </div>
                       <v-progress-linear
                         :model-value="getGoalProgress(goal)"
                         :color="getGoalColor(getGoalProgress(goal))"
-                        height="20"
+                        height="8"
+                        class="mt-2"
                         rounded
-                      >
-                        <strong>{{ getGoalProgress(goal) }}%</strong>
-                      </v-progress-linear>
-                      <div class="d-flex justify-space-between mt-1 text-caption">
-                        <span>Current: {{ goal.currentValue || 0 }} {{ goal.metric }}</span>
-                        <span>Target: {{ goal.targetValue }} {{ goal.metric }}</span>
-                        <span v-if="goal.targetDate">Due: {{ formatDate(goal.targetDate) }}</span>
+                      ></v-progress-linear>
+                      <div class="d-flex justify-space-between mt-1">
+                        <span class="text-caption">{{ goal.currentValue || 0 }} / {{ goal.targetValue }} {{ goal.metric || '' }}</span>
+                        <span class="text-caption">{{ getGoalProgress(goal) }}%</span>
                       </div>
-                    </v-list-item-subtitle>
+                    </v-list-item-content>
                   </v-list-item>
                 </v-list>
+                <v-alert v-else type="info" variant="tonal" class="ma-2">
+                  <v-icon left>mdi-information</v-icon>
+                  No active goals for this athlete.
+                </v-alert>
               </v-card-text>
             </v-card>
           </v-col>
@@ -301,35 +361,46 @@ onMounted(async () => {
             <v-card>
               <v-card-title class="text-h5">
                 <v-icon left color="#800020">mdi-history</v-icon>
-                Recent Workout History
+                Recent Workouts
+                <v-spacer></v-spacer>
+                <v-chip color="primary" size="small" class="mr-2">
+                  {{ workouts.length }} total
+                </v-chip>
               </v-card-title>
               <v-card-text>
-                <v-list v-if="workoutHistory.length > 0">
-                  <v-list-item v-for="workout in workoutHistory" :key="workout.id" class="mb-2">
-                    <template v-slot:prepend>
-                      <v-avatar color="#800020">
-                        <v-icon color="white">mdi-dumbbell</v-icon>
-                      </v-avatar>
-                    </template>
-                    <v-list-item-title class="font-weight-bold">
-                      {{ workout.exerciseName || workout.exercise?.name || 'Exercise' }}
-                    </v-list-item-title>
-                    <v-list-item-subtitle>
-                      <v-icon size="small">mdi-calendar</v-icon>
-                      {{ formatDate(workout.performedDate || workout.date) }} - 
-                      <v-icon size="small" class="ml-2">mdi-weight-lifter</v-icon>
-                      {{ workout.sets }} sets × {{ workout.reps }} reps
-                      <span v-if="workout.weight">
-                        <v-icon size="small" class="ml-2">mdi-weight</v-icon>
-                        {{ workout.weight }} lbs
-                      </span>
-                    </v-list-item-subtitle>
-                    <v-list-item-subtitle v-if="workout.notes" class="mt-1">
-                      <v-chip size="small" variant="tonal">
-                        <v-icon size="small" left>mdi-note-text</v-icon>
-                        {{ workout.notes }}
-                      </v-chip>
-                    </v-list-item-subtitle>
+                <v-list v-if="workouts.length > 0" class="pa-0">
+                  <v-list-item 
+                    v-for="(workout, index) in workouts.slice(0, 5)" 
+                    :key="index" 
+                    class="px-0"
+                  >
+                    <v-list-item-avatar>
+                      <v-icon color="#800020">mdi-dumbbell</v-icon>
+                    </v-list-item-avatar>
+                    <v-list-item-content>
+                      <v-list-item-title>{{ workout.exercise?.name || 'Unknown Exercise' }}</v-list-item-title>
+                      <v-list-item-subtitle class="d-flex flex-wrap">
+                        <span class="mr-2">{{ formatDate(workout.performedDate) }}</span>
+                        <template v-if="workout.sets && workout.reps">
+                          <span class="mr-2">• {{ workout.sets }}x{{ workout.reps }}</span>
+                        </template>
+                        <template v-if="workout.weight">
+                          <span class="mr-2">• {{ workout.weight }} lbs</span>
+                        </template>
+                        <template v-if="workout.duration">
+                          <span class="mr-2">• {{ Math.floor(workout.duration / 60) }}m {{ workout.duration % 60 }}s</span>
+                        </template>
+                        <template v-if="workout.distance">
+                          <span class="mr-2">• {{ workout.distance }} mi</span>
+                        </template>
+                      </v-list-item-subtitle>
+                      <v-list-item-subtitle v-if="workout.notes" class="mt-1">
+                        <v-chip size="small" variant="tonal" class="text-caption">
+                          <v-icon size="small" left>mdi-note-text</v-icon>
+                          {{ workout.notes }}
+                        </v-chip>
+                      </v-list-item-subtitle>
+                    </v-list-item-content>
                   </v-list-item>
                 </v-list>
                 <v-alert v-else color="grey-lighten-3" variant="flat">
