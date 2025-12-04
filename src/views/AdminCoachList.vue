@@ -160,7 +160,6 @@ const logout = () => {
                   <tr>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Athletes</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -168,12 +167,6 @@ const logout = () => {
                   <tr v-for="coach in filteredCoaches" :key="coach.id">
                     <td>{{ coach.fName }} {{ coach.lName }}</td>
                     <td>{{ coach.email }}</td>
-                    <td>
-                      <v-chip color="#800020" text-color="white" size="small">
-                        <v-icon left size="small">mdi-account-group</v-icon>
-                        {{ coach.athleteCount || 0 }} Athletes
-                      </v-chip>
-                    </td>
                     <td>
                       <v-btn
                         size="small"

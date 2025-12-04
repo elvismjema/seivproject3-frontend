@@ -103,19 +103,10 @@ const logout = () => {
       <v-row class="mt-5">
         <v-col cols="12">
           <v-card>
-            <v-card-title class="d-flex align-center">
+            <v-card-title>
               <h2 class="text-h5 font-weight-bold">
                 Athletes for Coach: {{ coach ? `${coach.fName} ${coach.lName}` : '' }}
               </h2>
-              <v-spacer></v-spacer>
-              <v-btn
-                color="#800020"
-                variant="outlined"
-                prepend-icon="mdi-account-multiple-plus"
-                @click="$router.push({ name: 'admin-coaches' })"
-              >
-                Back to Coaches
-              </v-btn>
             </v-card-title>
 
             <v-card-text>
