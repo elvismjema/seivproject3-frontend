@@ -5,13 +5,25 @@ const BASE_URL = import.meta.env.VITE_APP_BASE_URL || "https://project2.eaglesof
 
 // Helper to get auth headers
 const getAuthHeaders = () => {
-  const user = Utils.getStore("user");
-  if (!user || !user.token) {
-    throw new Error("No authentication token found");
+  try {
+    const user = Utils.getStore("user");
+    if (!user || !user.token) {
+      // Instead of throwing an error, redirect to login
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+      return {};
+    }
+    return {
+      Authorization: `Bearer ${user.token}`
+    };
+  } catch (error) {
+    console.error("Error getting auth headers:", error);
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login';
+    }
+    return {};
   }
-  return {
-    Authorization: `Bearer ${user.token}`
-  };
 };
 
 const CoachServices = {
