@@ -77,8 +77,7 @@ const workoutsByWeek = computed(() => {
 });
 
 const maxWorkoutsPerWeek = computed(() => {
-  return Math.max(...workoutsByWeek.value.map(w => w.count), 5
-  };
+  return Math.max(...workoutsByWeek.value.map(w => w.count), 5);
 });
 
 const formatDeadline = (deadline) => {
