@@ -354,7 +354,7 @@ const getStatusText = (plan) => {
                   </v-list-item>
                 </v-list>
               </div>
-              <v-alert v-else type="info" variant="tonal" class="mt-2">
+              <v-alert v-else-if="selectedDateScheduledExercises.length > 0" type="info" variant="tonal" class="mt-2">
                 No workouts recorded for this date
               </v-alert>
             </v-card-text>
