@@ -7,7 +7,9 @@ var baseurl = "";
 if (import.meta.env.DEV) {
   baseurl = "http://localhost:3122/api";
 } else {
-  baseurl = import.meta.env.VITE_APP_BASE_URL || "https://project2.eaglesoftwareteam.com/tracker-t2/api";
+  // Get base URL from env or use default, ensure it ends with /api
+  let envUrl = import.meta.env.VITE_APP_BASE_URL || "https://project2.eaglesoftwareteam.com/tracker-t2";
+  baseurl = envUrl.endsWith('/api') ? envUrl : envUrl.replace(/\/$/, '') + '/api';
 }
 
 const apiClient = axios.create({
