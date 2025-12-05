@@ -54,6 +54,16 @@ const AthleteServices = {
   // Complete a workout session
   completeWorkout: async (workoutData) => {
     return apiClient.post("/athlete/workouts/complete", workoutData);
+  },
+
+  // Get athlete's own progress (using athlete ID from token)
+  getAthleteProgress: async (params = {}) => {
+    return apiClient.get("/athlete/progress", { params });
+  },
+
+  // Mark daily exercises as completed
+  markExercisesCompleted: async (exercises) => {
+    return apiClient.post("/athlete/workouts/bulk-complete", { exercises });
   }
 };
 
