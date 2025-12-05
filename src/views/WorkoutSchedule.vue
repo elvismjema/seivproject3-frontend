@@ -336,10 +336,7 @@ const getStatusText = (plan) => {
               </v-alert>
               <v-alert v-else type="info" variant="tonal" class="mt-2">
                 Scheduled exercises shown above. No workouts recorded yet.
-              </v-alert>st-item>
-                </v-list>
-                <v-divider class="my-3"></v-divider>
-              </div>
+              </v-alert>
               
               <!-- Completed Workouts -->
               <div v-if="selectedDateWorkouts.length > 0">
