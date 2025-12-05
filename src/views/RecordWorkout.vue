@@ -12,25 +12,10 @@ const workoutForm = ref({
   sets: null,
   reps: null,
   weight: null,
-  duration: null,
   timeValue: null,
   timeUnit: 'seconds',
   notes: ''
 });
-const durationOptions = [
-  { title: '10 minutes', value: 10 },
-  { title: '20 minutes', value: 20 },
-  { title: '30 minutes', value: 30 },
-  { title: '40 minutes', value: 40 },
-  { title: '50 minutes', value: 50 },
-  { title: '60 minutes (1 hour)', value: 60 },
-  { title: '70 minutes', value: 70 },
-  { title: '80 minutes', value: 80 },
-  { title: '90 minutes', value: 90 },
-  { title: '100 minutes', value: 100 },
-  { title: '110 minutes', value: 110 },
-  { title: '120 minutes (2 hours)', value: 120 }
-];
 const submitting = ref(false);
 const successMessage = ref('');
 const availableExercises = ref([]);
@@ -71,7 +56,6 @@ const submitWorkout = async () => {
       sets: workoutForm.value.sets,
       reps: workoutForm.value.reps,
       weight: workoutForm.value.weight,
-      duration: workoutForm.value.duration,
       timeValue: workoutForm.value.timeValue,
       timeUnit: workoutForm.value.timeUnit,
       notes: workoutForm.value.notes
@@ -86,7 +70,6 @@ const submitWorkout = async () => {
       sets: null,
       reps: null,
       weight: null,
-      duration: null,
       timeValue: null,
       timeUnit: 'seconds',
       notes: ''
@@ -193,17 +176,6 @@ const goBack = () => {
                     ></v-text-field>
                   </v-col>
                 </v-row>
-
-                <v-select
-                  v-model="workoutForm.duration"
-                  :items="durationOptions"
-                  label="Workout Duration (Optional)"
-                  variant="outlined"
-                  class="mb-3"
-                  clearable
-                  hint="How long did this workout take?"
-                  persistent-hint
-                ></v-select>
 
                 <v-divider class="my-4"></v-divider>
                 <p class="text-subtitle-2 mb-2">Time-Based Exercise (Optional)</p>
