@@ -13,6 +13,8 @@ const workoutForm = ref({
   reps: null,
   weight: null,
   duration: null,
+  timeValue: null,
+  timeUnit: 'seconds',
   notes: ''
 });
 const durationOptions = [
@@ -70,6 +72,8 @@ const submitWorkout = async () => {
       reps: workoutForm.value.reps,
       weight: workoutForm.value.weight,
       duration: workoutForm.value.duration,
+      timeValue: workoutForm.value.timeValue,
+      timeUnit: workoutForm.value.timeUnit,
       notes: workoutForm.value.notes
     };
     
@@ -83,6 +87,8 @@ const submitWorkout = async () => {
       reps: null,
       weight: null,
       duration: null,
+      timeValue: null,
+      timeUnit: 'seconds',
       notes: ''
     };
   } catch (err) {
@@ -198,6 +204,33 @@ const goBack = () => {
                   hint="How long did this workout take?"
                   persistent-hint
                 ></v-select>
+
+                <v-divider class="my-4"></v-divider>
+                <p class="text-subtitle-2 mb-2">Time-Based Exercise (Optional)</p>
+                <p class="text-caption text-grey mb-3">For timed exercises like running, swimming, or batting practice</p>
+                
+                <v-row>
+                  <v-col cols="6">
+                    <v-text-field
+                      v-model.number="workoutForm.timeValue"
+                      label="Time Value"
+                      type="number"
+                      variant="outlined"
+                      min="0"
+                      step="0.01"
+                      hint="e.g., 30 for 30 seconds"
+                      persistent-hint
+                    ></v-text-field>
+                  </v-col>
+                  <v-col cols="6">
+                    <v-select
+                      v-model="workoutForm.timeUnit"
+                      :items="[{title: 'Seconds', value: 'seconds'}, {title: 'Minutes', value: 'minutes'}, {title: 'Hours', value: 'hours'}]"
+                      label="Time Unit"
+                      variant="outlined"
+                    ></v-select>
+                  </v-col>
+                </v-row>
 
                 <v-textarea
                   v-model="workoutForm.notes"

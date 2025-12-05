@@ -136,6 +136,46 @@ const selectedDateWorkouts = computed(() => {
   return getWorkoutsForDate(selectedDate.value);
 });
 
+const selectedDateScheduledExercises = computed(() => {
+  if (!selectedDate.value) return [];
+  return getScheduledExercisesForDate(selectedDate.value);
+});
+
+const getScheduledExercisesForDate = (date) => {
+  const dayOfWeek = date.getDay(); // 0=Sunday, 1=Monday, etc.
+  const adjustedDayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek; // Convert to 1=Monday, 7=Sunday
+  
+  const scheduledExercises = [];
+  
+  assignedPlans.value.forEach(plan => {
+    const start = new Date(plan.startDate);
+    const end = plan.endDate ? new Date(plan.endDate) : new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+    const checkDate = new Date(date);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    // Check if date is within plan range
+    if (checkDate >= start && checkDate <= end) {
+      if (plan.plan && plan.plan.planExercises) {
+        const dayExercises = plan.plan.planExercises.filter(pe => pe.dayOfWeek === adjustedDayOfWeek);
+        dayExercises.forEach(pe => {
+          scheduledExercises.push({
+            planName: plan.plan.name,
+            exercise: pe.exercise,
+            sets: pe.sets,
+            reps: pe.reps,
+            duration: pe.duration,
+            order: pe.order || 0
+          });
+        });
+      }
+    }
+  });
+  
+  return scheduledExercises.sort((a, b) => a.order - b.order);
+};
+
 const formatDate = (date) => {
   return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 };
@@ -276,6 +316,32 @@ const getStatusText = (plan) => {
               {{ formatDate(selectedDate) }}
             </v-card-title>
             <v-card-text>
+              <!-- Scheduled Exercises -->
+              <div v-if="selectedDateScheduledExercises.length > 0" class="mb-4">
+                <h3 class="text-subtitle-1 mb-2 d-flex align-center">
+                  <v-icon color="#800020" class="mr-2">mdi-calendar-check</v-icon>
+                  Scheduled Exercises
+                </h3>
+                <v-list density="compact">
+                  <v-list-item v-for="(item, index) in selectedDateScheduledExercises" :key="index" class="mb-1">
+                    <template v-slot:prepend>
+                      <v-icon color="#800020">mdi-dumbbell</v-icon>
+                    </template>
+                    <v-list-item-title>{{ item.exercise?.name || 'Exercise' }}</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </div>
+              <v-alert v-else-if="selectedDateScheduledExercises.length === 0" type="info" variant="tonal" class="mt-2">
+                No exercises scheduled or completed for this date
+              </v-alert>
+              <v-alert v-else type="info" variant="tonal" class="mt-2">
+                Scheduled exercises shown above. No workouts recorded yet.
+              </v-alert>st-item>
+                </v-list>
+                <v-divider class="my-3"></v-divider>
+              </div>
+              
+              <!-- Completed Workouts -->
               <div v-if="selectedDateWorkouts.length > 0">
                 <h3 class="text-subtitle-1 mb-2">Completed Workouts</h3>
                 <v-list density="compact">

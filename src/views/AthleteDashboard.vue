@@ -17,6 +17,8 @@ const recentProgress = ref({
 });
 const loading = ref(true);
 const error = ref(null);
+const selectedExercises = ref([]);
+const isMarkingCompleted = ref(false);
 
 onMounted(async () => {
   user.value = Utils.getStore("user");
@@ -97,18 +99,55 @@ const filteredGoals = computed(() => {
   });
 });
 
-const formatDeadline = (deadline) => {
-  if (!deadline) return 'No deadline';
-  const date = new Date(deadline);
+const formatDeadline = (targetDate) => {
+  if (!targetDate) return 'No deadline';
+  const date = new Date(targetDate);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const isDeadlineApproaching = (deadline) => {
-  if (!deadline) return false;
+const isDeadlineApproaching = (targetDate) => {
+  if (!targetDate) return false;
   const now = new Date();
-  const deadlineDate = new Date(deadline);
+  const deadlineDate = new Date(targetDate);
   const daysUntil = Math.ceil((deadlineDate - now) / (1000 * 60 * 60 * 24));
   return daysUntil <= 7 && daysUntil > 0;
+};
+
+const markExercisesAsCompleted = async () => {
+  if (selectedExercises.value.length === 0) {
+    return;
+  }
+
+  try {
+    isMarkingCompleted.value = true;
+    
+    // Get the exercises that are selected
+    const exercisesToComplete = todayWorkout.value.filter(ex => 
+      selectedExercises.value.includes(ex.id)
+    );
+    
+    // Call the bulk complete endpoint
+    await AthleteServices.markExercisesCompleted(exercisesToComplete);
+    
+    // Remove completed exercises from today's workout
+    todayWorkout.value = todayWorkout.value.filter(ex => 
+      !selectedExercises.value.includes(ex.id)
+    );
+    
+    // Clear selections
+    selectedExercises.value = [];
+    
+    // Refresh stats
+    const statsResponse = await AthleteServices.getWeeklyStats();
+    if (statsResponse.data && statsResponse.data.data) {
+      recentProgress.value = statsResponse.data.data;
+    }
+  } catch (err) {
+    console.error('Error marking exercises as completed:', err);
+    alert('Failed to mark exercises as completed. Please try again.');
+  } finally {
+    isMarkingCompleted.value = false;
+  }
 };
 </script>
 
@@ -150,18 +189,34 @@ const isDeadlineApproaching = (deadline) => {
             </v-alert>
             <v-list v-else>
               <v-list-item v-for="exercise in todayWorkout" :key="exercise.id">
+                <template v-slot:prepend>
+                  <v-checkbox 
+                    v-model="selectedExercises"
+                    :value="exercise.id"
+                    hide-details
+                    density="compact"
+                  ></v-checkbox>
+                </template>
                 <v-list-item-title>{{ exercise.name }}</v-list-item-title>
                 <v-list-item-subtitle>
                   {{ exercise.sets }} sets × {{ exercise.reps }} reps
                   <span v-if="exercise.weight">@ {{ exercise.weight }} lbs</span>
                 </v-list-item-subtitle>
-                <template v-slot:append>
-                  <v-checkbox v-model="exercise.completed"></v-checkbox>
-                </template>
               </v-list-item>
             </v-list>
           </v-card-text>
           <v-card-actions>
+            <v-btn 
+              v-if="selectedExercises.length > 0"
+              color="success"
+              variant="elevated"
+              class="text-white mr-2"
+              @click="markExercisesAsCompleted"
+              :loading="isMarkingCompleted"
+            >
+              <v-icon left>mdi-check-circle</v-icon>
+              Mark as Completed ({{ selectedExercises.length }})
+            </v-btn>
             <v-btn 
               color="#800020" 
               variant="elevated" 
@@ -237,8 +292,8 @@ const isDeadlineApproaching = (deadline) => {
                   </v-progress-linear>
                   <div class="d-flex justify-space-between text-caption text-grey-darken-1">
                     <span>
-                      <v-icon size="x-small" :color="isDeadlineApproaching(goal.deadline) ? 'error' : '#800020'">mdi-calendar-clock</v-icon>
-                      Deadline: {{ formatDeadline(goal.deadline) }}
+                      <v-icon size="x-small" :color="isDeadlineApproaching(goal.targetDate) ? 'error' : '#800020'">mdi-calendar-clock</v-icon>
+                      Deadline: {{ formatDeadline(goal.targetDate) }}
                     </span>
                     <span v-if="goal.targetValue">
                       {{ goal.currentValue || 0 }} / {{ goal.targetValue }} {{ goal.unit || '' }}

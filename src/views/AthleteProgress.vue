@@ -6,9 +6,7 @@ import AthleteServices from '../services/athleteServices.js';
 
 const router = useRouter();
 const user = ref({});
-const workoutHistory = ref([]);
-const activeGoals = ref([]);
-const assignedPlans = ref([]);
+const progressData = ref(null);
 const loading = ref(true);
 const selectedWeeks = ref(4);
 
@@ -20,30 +18,14 @@ onMounted(async () => {
   }
 
   try {
-    const [historyResponse, goalsResponse, plansResponse] = await Promise.all([
-      AthleteServices.getWorkoutHistory(),
-      AthleteServices.getAthleteGoals(),
-      AthleteServices.getAssignedPlans()
-    ]);
+    // Use the athlete progress endpoint that matches coach's view
+    const response = await AthleteServices.getAthleteProgress({ days: 30 });
     
-    if (historyResponse.data && historyResponse.data.data) {
-      workoutHistory.value = historyResponse.data.data;
-    }
-    // Fix: Goals endpoint returns nested object with active/completed/incomplete
-    if (goalsResponse.data && goalsResponse.data.data) {
-      const goalsData = goalsResponse.data.data;
-      // Combine all goals (active, completed, incomplete) but prioritize active
-      activeGoals.value = [
-        ...(goalsData.active || []),
-        ...(goalsData.completed || []),
-        ...(goalsData.incomplete || [])
-      ];
-    }
-    if (plansResponse.data && plansResponse.data.data) {
-      assignedPlans.value = plansResponse.data.data;
+    if (response.data && response.data.data) {
+      progressData.value = response.data.data;
     }
   } catch (err) {
-    console.error('Error fetching athlete data:', err);
+    console.error('Error fetching athlete progress:', err);
   } finally {
     loading.value = false;
   }
@@ -52,6 +34,31 @@ onMounted(async () => {
 const goBack = () => {
   router.push({ name: 'athlete-dashboard' });
 };
+
+// Computed properties based on progressData
+const workoutHistory = computed(() => {
+  return progressData.value?.workoutHistory || [];
+});
+
+const activeGoals = computed(() => {
+  return progressData.value?.goals || [];
+});
+
+const activePlanProgress = computed(() => {
+  return progressData.value?.activePlan || null;
+});
+
+const totalWorkouts = computed(() => {
+  return progressData.value?.totalWorkouts || 0;
+});
+
+const weeklyWorkouts = computed(() => {
+  return progressData.value?.weeklyWorkouts || 0;
+});
+
+const currentStreak = computed(() => {
+  return progressData.value?.currentStreak || 0;
+});
 
 // Calculate workout frequency for the chart based on selected weeks
 const workoutsByWeek = computed(() => {
@@ -70,34 +77,7 @@ const workoutsByWeek = computed(() => {
 });
 
 const maxWorkoutsPerWeek = computed(() => {
-  return Math.max(...workoutsByWeek.value.map(w => w.count), 5);
-});
-
-// Calculate plan progress
-const activePlanProgress = computed(() => {
-  const activePlan = assignedPlans.value.find(plan => {
-    const now = new Date();
-    const start = new Date(plan.startDate);
-    const end = plan.endDate ? new Date(plan.endDate) : null;
-    return now >= start && (!end || now <= end);
-  });
-  
-  if (!activePlan) return null;
-  
-  const now = new Date();
-  const start = new Date(activePlan.startDate);
-  const end = activePlan.endDate ? new Date(activePlan.endDate) : new Date(start.getTime() + 30 * 24 * 60 * 60 * 1000);
-  
-  const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-  const daysPassed = Math.ceil((now - start) / (1000 * 60 * 60 * 24));
-  const progress = Math.min((daysPassed / totalDays) * 100, 100);
-  
-  return {
-    ...activePlan,
-    totalDays,
-    daysPassed,
-    daysRemaining: Math.max(totalDays - daysPassed, 0),
-    progress: Math.round(progress)
+  return Math.max(...workoutsByWeek.value.map(w => w.count), 5
   };
 });
 
@@ -175,7 +155,7 @@ const getProgressColor = (progress) => {
                   </v-avatar>
                   <div>
                     <div class="text-h5 font-weight-bold" style="color: #800020">
-                      {{ workoutHistory.length }}
+                      {{ totalWorkouts }}
                     </div>
                     <div class="text-caption text-grey-darken-1">Total Workouts</div>
                   </div>
@@ -184,26 +164,26 @@ const getProgressColor = (progress) => {
               <v-col cols="12" md="4">
                 <div class="d-flex align-center">
                   <v-avatar size="50" color="#1976D2" class="mr-3">
-                    <v-icon color="white" size="28">mdi-target</v-icon>
+                    <v-icon color="white" size="28">mdi-calendar-week</v-icon>
                   </v-avatar>
                   <div>
                     <div class="text-h5 font-weight-bold" style="color: #1976D2">
-                      {{ activeGoals.filter(g => g.status === 'active').length }}
+                      {{ weeklyWorkouts }}
                     </div>
-                    <div class="text-caption text-grey-darken-1">Active Goals</div>
+                    <div class="text-caption text-grey-darken-1">This Week</div>
                   </div>
                 </div>
               </v-col>
               <v-col cols="12" md="4">
                 <div class="d-flex align-center">
                   <v-avatar size="50" color="#4CAF50" class="mr-3">
-                    <v-icon color="white" size="28">mdi-trophy</v-icon>
+                    <v-icon color="white" size="28">mdi-fire</v-icon>
                   </v-avatar>
                   <div>
                     <div class="text-h5 font-weight-bold" style="color: #4CAF50">
-                      {{ activeGoals.filter(g => g.progress >= 100).length }}
+                      {{ currentStreak }}
                     </div>
-                    <div class="text-caption text-grey-darken-1">Completed Goals</div>
+                    <div class="text-caption text-grey-darken-1">Day Streak</div>
                   </div>
                 </div>
               </v-col>
